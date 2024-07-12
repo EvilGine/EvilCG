@@ -1,0 +1,7 @@
+set BUILD_TYPE=%1
+set VCPKG_CMAKE_PATH=%2
+mkdir build
+cd build
+cmake -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -GNinja -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_TOOLCHAIN_FILE=%VCPKG_CMAKE_PATH% .. 
+cmake --build .
+cd ..
