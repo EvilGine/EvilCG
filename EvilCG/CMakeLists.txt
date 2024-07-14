@@ -45,7 +45,10 @@ include_directories(./inc)
 
 # Source Files
 set(SOURCE_FILES
-	./src/main_ecg.cpp
+	./src/ecg_compute.cpp
+	./src/ecg_debug.cpp
+	./src/ecg_core.cpp
+	./src/ecg_lod.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

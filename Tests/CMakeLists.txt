@@ -15,8 +15,9 @@ include_directories(../EvilCG/inc)
 
 # Source files
 set(SOURCE_FILES
-	./src/tests_main.cpp
-	./src/test_ecg.cpp
+	./src/ecg_compute_test.cpp
+	./src/ecg_debug_test.cpp
+	./src/ecg_test.cpp
 )
 
 enable_testing()
