@@ -9,6 +9,7 @@ namespace ecg {
 	ecg_status ecg_debug_func();
 #endif
 	ecg_status check_mesh(mesh_t* mesh);
+	ecg_status get_devices();
 
 	namespace compute {
 		ecg_status calculate_normals(mesh_t* mesh);

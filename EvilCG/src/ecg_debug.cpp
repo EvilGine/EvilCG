@@ -1,7 +1,7 @@
 #include <ecg_api.h>
 
 namespace ecg {
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(SYCL_BUILD)
 	ecg_status ecg_debug_func() {
 		const std::string secret{
 			"Ifmmp-!xpsme\"\012J(n!tpssz-!Ebwf/!"
@@ -19,6 +19,10 @@ namespace ecg {
 
 		std::cout << result << "\n";
 		sycl::free(result, q);
+		return SUCCESS;
+	}
+#elif defined(OPENCL_BUILD)
+	ecg_status ecg_debug_func() {
 		return SUCCESS;
 	}
 #endif
