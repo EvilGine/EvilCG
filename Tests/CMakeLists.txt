@@ -10,6 +10,7 @@ project (
 	DESCRIPTION "Tests - tests for EvilCG"
 )
 
+add_compile_definitions(GTEST_BUILD)
 find_package(GTest CONFIG REQUIRED)
 include_directories(../EvilCG/inc)
 
@@ -18,6 +19,7 @@ set(SOURCE_FILES
 	./src/ecg_compute_test.cpp
 	./src/ecg_debug_test.cpp
 	./src/ecg_core_test.cpp
+	./src/ecg_cl_test.cpp
 	./src/ecg_test.cpp
 )
 

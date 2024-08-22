@@ -62,6 +62,7 @@ set(SOURCE_FILES
 	./src/ecg_debug.cpp
 	./src/ecg_core.cpp
 	./src/ecg_lod.cpp
+    ./src/ecg_cl.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

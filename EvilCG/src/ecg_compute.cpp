@@ -12,6 +12,15 @@ namespace ecg {
             return SUCCESS;
         }
 #elif defined(OPENCL_BUILD)
+        ecg_status calculate_center(mesh_t* mesh) {
+            ecg_status status = check_mesh(mesh);
+            if (status != SUCCESS) return status;
+
+            size_t threads = std::thread::hardware_concurrency();
+
+            return SUCCESS;
+        }
+
         ecg_status calculate_normals(mesh_t* mesh) {
             ecg_status status = check_mesh(mesh);
             if (status != SUCCESS) return status;

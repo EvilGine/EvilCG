@@ -4,6 +4,10 @@
 #include <ecg_status.h>
 #include <ecg_mesh_t.h>
 
+#ifdef GTEST_BUILD
+	#include <ecg_cl.h>
+#endif
+
 namespace ecg {
 #ifdef _DEBUG
 	ecg_status ecg_debug_func();

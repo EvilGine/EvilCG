@@ -4,11 +4,12 @@
 #include <glm/glm.hpp>
 #if defined(SYCL_BUILD)
 	#include <sycl/sycl.hpp>
-#elif defined(OPENCL_BUILD)
+// #elif defined(OPENCL_BUILD)
+#else
 	#ifdef __APPLE__
 		#include <OpenCL/opencl.h>
 	#else
-		#include <CL/cl.h>
+		#include <CL/opencl.hpp>
 	#endif
 #endif
 
