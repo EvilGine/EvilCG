@@ -3,7 +3,12 @@
 #include <gtest/gtest.h>
 #include <ecg_api.h>
 
-TEST(cl_ecg, cl) {
+/// <summary>
+/// Check init of OpenCL Host controller with multithreading.
+/// </summary>
+/// <param name=""></param>
+/// <param name=""></param>
+TEST(cl_ecg, cl_init) {
 	std::vector<std::thread> m_threads;
 	
 	auto default_join = [](std::thread& th) {
@@ -26,5 +31,15 @@ TEST(cl_ecg, cl) {
 		std::for_each(m_threads.begin(), m_threads.end(), default_join);
 	}
 	std::for_each(m_threads.begin(), m_threads.end(), default_join);
+}
+
+/// <summary>
+/// Check OpenCL Program Compile
+/// </summary>
+/// <param name=""></param>
+/// <param name=""></param>
+TEST(cl_ecg, cl_program) {
+	auto& host_ctrl = ecg::ecg_host_ctrl::get_instance();
+	auto program = ecg::ecg_cl_program();
 }
 #endif

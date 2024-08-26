@@ -17,6 +17,8 @@
 #include <mutex>
 
 #include <iostream>
+#include <utility>
+#include <ranges>
 #include <vector>
 #include <cmath>
 #include <list>
