@@ -13,6 +13,7 @@ namespace ecg {
 		static ecg_host_ctrl& get_instance();
 
 		const cl::Context& get_context() const;
+		const cl::Device& get_main_device() const;
 		const cl::CommandQueue& get_cmd_queue() const;
 
 	protected:
@@ -41,8 +42,10 @@ namespace ecg {
 		ecg_cl_program();
 		virtual ~ecg_cl_program() = default;
 
-		template <std::ranges::range Iterable>
-		cl_int compile_program(const Iterable& sources);
+		const cl::Program& get_program() const;
+
+		cl_int build_program(cl::Device dev);
+		cl_int compile_program(const cl::Program::Sources& sources);
 
 	private:
 		cl::Program m_program;

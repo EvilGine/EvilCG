@@ -5,6 +5,10 @@ namespace ecg {
 		return m_context;
 	}
 
+	const cl::Device& ecg::ecg_host_ctrl::get_main_device() const {
+		return m_main_device;
+	}
+
 	const cl::CommandQueue& ecg_host_ctrl::get_cmd_queue() const{
 		return m_cmd_queue;
 	}
@@ -112,8 +116,16 @@ namespace ecg {
 		m_is_compiled = false;
 	}
 
-	template <std::ranges::range Iterable>
-	cl_int ecg_cl_program::compile_program(const Iterable& sources) {
+	const cl::Program& ecg_cl_program::get_program() const {
+		return m_program;
+	}
+
+	cl_int ecg_cl_program::build_program(cl::Device dev) {
+		cl_int op_res = m_program.build(dev);
+		return op_res;
+	}
+
+	cl_int ecg_cl_program::compile_program(const cl::Program::Sources& sources) {
 		auto& host_ctrl = ecg_host_ctrl::get_instance();
 		auto& cmd_queue = host_ctrl.get_cmd_queue();
 		auto& context = host_ctrl.get_context();
