@@ -1,15 +1,15 @@
 #include <ecg_cl.h>
 
 namespace ecg {
-	const cl::Context& ecg_host_ctrl::get_context() const {
+	cl::Context& ecg_host_ctrl::get_context() {
 		return m_context;
 	}
 
-	const cl::Device& ecg::ecg_host_ctrl::get_main_device() const {
+	cl::Device& ecg::ecg_host_ctrl::get_main_device() {
 		return m_main_device;
 	}
 
-	const cl::CommandQueue& ecg_host_ctrl::get_cmd_queue() const{
+	cl::CommandQueue& ecg_host_ctrl::get_cmd_queue() {
 		return m_cmd_queue;
 	}
 
@@ -28,8 +28,27 @@ namespace ecg {
 		}
 
 #ifdef _DEBUG
+		auto vec_to_str = []<typename Type>(std::vector<Type> vec) {
+			std::string result;
+			for (auto& item : vec)
+				result += " " + std::to_string(item);
+			if (vec.size() > 0) result = "[" + result + " ]";
+			return result;
+		};
+
 		std::string dev_name = main_device.getInfo<CL_DEVICE_NAME>();
-		std::cout << "Choosen Device Name: " << dev_name << std::endl;
+		auto work_item_sizes = main_device.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
+		const size_t line_size = 28 + dev_name.size();
+
+		std::cout << "|-" << std::setw(line_size) << std::setfill('-') << "|" << std::setfill(' ') << std::endl;
+		std::cout << "| Choosen Device Name : " << dev_name << std::setw(6) << "|" << std::endl;
+		std::cout << "|-" << std::setw(line_size) << std::setfill('-') << "|" << std::endl;
+
+		std::cout << "\tMAX Compute Units: " << main_device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
+		std::cout << "\tMAX Clock Frequency: " << main_device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>() << std::endl;
+		std::cout << "\tMAX Work Group Size: " << main_device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << std::endl;
+		std::cout << "\tMAX Work Item Sizes: " << vec_to_str(work_item_sizes) << std::endl;
+		std::cout << "|-" << std::setw(line_size) << std::setfill('-') << "|" << std::endl;
 #endif
 
 		return main_device;
@@ -112,27 +131,30 @@ namespace ecg {
 		return m_instance;
 	}
 
-	ecg_cl_program::ecg_cl_program() {
-		m_is_compiled = false;
+	ecg_program::ecg_program(cl::Context& context, cl::Device& dev, cl::CommandQueue& cmd_queue, cl::Program::Sources& sources) {
+		m_cmd_queue = cmd_queue;
+		m_context = context;
+		m_is_built = false;
+		m_device = dev;
 	}
 
-	const cl::Program& ecg_cl_program::get_program() const {
+	const cl::Program& ecg_program::get_program() const {
 		return m_program;
 	}
 
-	cl_int ecg_cl_program::build_program(cl::Device dev) {
+	const bool ecg_program::is_program_was_built() const {
+		return m_is_built;
+	}
+
+	cl_int ecg_program::build_program(cl::Device dev) {
 		cl_int op_res = m_program.build(dev);
 		return op_res;
 	}
 
-	cl_int ecg_cl_program::compile_program(const cl::Program::Sources& sources) {
-		auto& host_ctrl = ecg_host_ctrl::get_instance();
-		auto& cmd_queue = host_ctrl.get_cmd_queue();
-		auto& context = host_ctrl.get_context();
+	cl_int ecg_program::compile_program(const cl::Program::Sources& sources) {
 		cl_int op_res = CL_SUCCESS;
-
-		m_program = cl::Program(context, sources, &op_res);
-		if (op_res == CL_SUCCESS) m_is_compiled = true;
+		m_program = cl::Program(m_context, sources, &op_res);
+		if (op_res == CL_SUCCESS) m_is_built = true;
 		return op_res;
 	}
 }

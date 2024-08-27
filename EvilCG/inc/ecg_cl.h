@@ -12,9 +12,9 @@ namespace ecg {
 		virtual ~ecg_host_ctrl() = default;
 		static ecg_host_ctrl& get_instance();
 
-		const cl::Context& get_context() const;
-		const cl::Device& get_main_device() const;
-		const cl::CommandQueue& get_cmd_queue() const;
+		cl::Context& get_context();
+		cl::Device& get_main_device();
+		cl::CommandQueue& get_cmd_queue();
 
 	protected:
 		template <std::ranges::range Iterable>
@@ -37,19 +37,44 @@ namespace ecg {
 	/// <summary>
 	/// Program wrapper for easy work with OpenCL program.
 	/// </summary>
-	class ecg_cl_program {
+	class ecg_program {
 	public:
-		ecg_cl_program();
-		virtual ~ecg_cl_program() = default;
+		virtual ~ecg_program() = default;
+		ecg_program(cl::Context& context, cl::Device& dev, cl::CommandQueue& cmd_queue, cl::Program::Sources& sources);
 
 		const cl::Program& get_program() const;
+		const bool is_program_was_built() const;
 
 		cl_int build_program(cl::Device dev);
 		cl_int compile_program(const cl::Program::Sources& sources);
+		
+		template <typename ... Arg>
+		cl_int execute_program(std::string func, cl::NDRange global, cl::NDRange local, const Arg& ... args) {
+			if (!m_is_built) 
+				return CL_INVALID_PROGRAM;
+			
+			cl::Kernel kernel(m_program, func.c_str());
+			cl_int op_res = CL_SUCCESS;
+			cl_int arg_index = 0;
+
+			auto set_kernel_arg = [&kernel, &arg_index](const auto& arg) {
+				cl_int op_res = kernel.setArg(arg_index++, arg);
+				return op_res;
+			};
+
+			auto list = { args... };
+			for(auto item : list) op_res = set_kernel_arg(item);
+			op_res = m_cmd_queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
+			return op_res;
+		}
 
 	private:
+		cl::CommandQueue m_cmd_queue;
+		cl::Context m_context;
+		cl::Device m_device;
+
 		cl::Program m_program;
-		bool m_is_compiled;
+		bool m_is_built;
 
 	};
 }

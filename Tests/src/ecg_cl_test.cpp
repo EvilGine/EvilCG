@@ -44,6 +44,7 @@ TEST(cl_ecg, cl_program) {
 	auto& device = host_ctrl.get_main_device();
 	auto& context = host_ctrl.get_context();
 	const size_t size = 1024 * 1024 * 1024;
+	cl_int op_res = CL_SUCCESS;
 
 	std::srand(time(0));
 	auto fill_array = [](std::vector<int>& vec, size_t sz) {
@@ -74,29 +75,29 @@ TEST(cl_ecg, cl_program) {
 		cl::Buffer buffer_a = cl::Buffer(context, CL_MEM_READ_ONLY, size * sizeof(int));
 		cl::Buffer buffer_b = cl::Buffer(context, CL_MEM_READ_ONLY, size * sizeof(int));
 		cl::Buffer buffer_c = cl::Buffer(context, CL_MEM_WRITE_ONLY, size * sizeof(int));
+		auto a_id = buffer_a.get();
+		auto b_id = buffer_b.get();
+		auto c_id = buffer_c.get();
 
-		auto program = ecg::ecg_cl_program();
-		std::vector<std::string> sources = { vec_add_kernel };
-		program.compile_program(sources);
-		program.build_program(device);
+		cl::Program::Sources sources = { vec_add_kernel };
+		ecg::ecg_program program(context, device, cmd_queue, sources);
+		op_res = program.compile_program(sources);
+		op_res = program.build_program(device);
 
 		if (a_fill_thread.joinable()) a_fill_thread.join();
 		if (b_fill_thread.joinable()) b_fill_thread.join();
 
 		cmd_queue.enqueueWriteBuffer(buffer_a, CL_FALSE, 0, size * sizeof(int), a.data());
 		cmd_queue.enqueueWriteBuffer(buffer_b, CL_FALSE, 0, size * sizeof(int), b.data());
-		cl::Kernel vecadd_kernel(program.get_program(), "vec_add");
-
-		// Set the kernel arguments
-		vecadd_kernel.setArg(0, buffer_a);
-		vecadd_kernel.setArg(1, buffer_b);
-		vecadd_kernel.setArg(2, buffer_c);
 
 		// Execute the kernel
 		auto start = std::chrono::high_resolution_clock::now();
 			cl::NDRange global(size);
-			cl::NDRange local(256);
-			cmd_queue.enqueueNDRangeKernel(vecadd_kernel, cl::NullRange, global, local);
+			cl::NDRange local(1024);
+			op_res = program.execute_program(
+				"vec_add", global, local,
+				buffer_a, buffer_b, buffer_c
+			);
 		auto end = std::chrono::high_resolution_clock::now();    
 		auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);    
 		std::chrono::duration<double, std::milli> ms_double = end - start;
