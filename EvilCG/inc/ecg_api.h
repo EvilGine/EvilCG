@@ -1,27 +1,15 @@
 #ifndef ECG_API_H
 #define ECG_API_H
+#include <help/ecg_status.h>
+#include <help/ecg_geom.h>
 #include <ecg_global.h>
-#include <ecg_status.h>
-#include <ecg_mesh_t.h>
 
-#ifdef GTEST_BUILD
-	#include <ecg_cl.h>
+#ifdef ENABLE_ECG_CL
+	#include <cl/ecg_host_ctrl.h>
+	#include <cl/ecg_program.h>
 #endif
 
 namespace ecg {
-#ifdef _DEBUG
-	ecg_status ecg_debug_func();
-#endif
-	ecg_status check_mesh(mesh_t* mesh);
-	ecg_status get_devices();
-
-	namespace compute {
-		ecg_status calculate_normals(mesh_t* mesh);
-	}
-
-	namespace lod {
-
-	}
 
 }
 
