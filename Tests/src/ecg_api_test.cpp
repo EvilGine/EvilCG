@@ -1,4 +1,3 @@
-#ifdef _DEBUG
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -15,4 +14,22 @@ TEST(ecg_api, init_ecg) {
 	ASSERT_NE(context, cl::Context());
 	ASSERT_NE(queue, cl::CommandQueue());
 }
-#endif
+
+TEST(ecg_api, summ_vertexes) {
+	ecg::mesh_t mesh;
+}
+
+TEST(ecg_api, get_center) {
+	ecg::mesh_t mesh;
+	ecg::get_center(&mesh);
+}
+
+TEST(ecg_api, compute_aabb) {
+	ecg::mesh_t mesh;
+	ecg::compute_aabb(&mesh);
+}
+
+TEST(ecg_api, compute_obb) {
+	ecg::mesh_t mesh;
+	ecg::compute_obb(&mesh);
+}

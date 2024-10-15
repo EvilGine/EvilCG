@@ -1,7 +1,7 @@
 ﻿{
   "configurations": [
     {
-      "name": "x64-Debug-OpenCL",
+      "name": "x64-Debug",
       "generator": "Ninja",
       "configurationType": "Debug",
       "inheritEnvironments": [ "msvc_x64_x64" ],
@@ -11,7 +11,7 @@
       "cmakeCommandArgs": "-D CUSTOM_BUILD_TYPE:STRING=\"opencl\""
     },
     {
-      "name": "x64-RelWithDeb-OpenCL",
+      "name": "x64-RelWithDeb",
       "generator": "Ninja",
       "configurationType": "RelWithDebInfo",
       "buildRoot": "${projectDir}\\build\\${name}",
@@ -21,7 +21,7 @@
       "inheritEnvironments": [ "msvc_x64_x64" ]
     },
     {
-      "name": "x64-Release-OpenCL",
+      "name": "x64-Release",
       "generator": "Ninja",
       "configurationType": "Release",
       "buildRoot": "${projectDir}\\build\\${name}",

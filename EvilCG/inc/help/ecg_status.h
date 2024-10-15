@@ -12,6 +12,41 @@ namespace ecg {
 	const uint32_t EMPTY_VERTEXES = 3;
 
 	typedef uint32_t ecg_status;
+
+	/// <summary>
+	/// Handler for ecg_status with exception if status not equal SUCCESS
+	/// </summary>
+	class ecg_status_handler {
+	public:
+		ecg_status_handler() : m_status(SUCCESS) {};
+		virtual ~ecg_status_handler() = default;
+
+		ecg_status_handler& operator=(const ecg_status_handler& rhs);
+		ecg_status_handler& operator=(const ecg_status& rhs);
+
+	private:
+		ecg_status m_status;
+
+	};
+
+	/// <summary>
+	/// Custom exception for ecg_status
+	/// </summary>
+	class ecg_status_ex : public std::exception {
+	public:
+		ecg_status_ex() : m_message(""), m_status_code(UNKNOWN_ERROR) {}
+		ecg_status_ex(const ecg_status& status) : m_message(""), m_status_code(status) {}
+		ecg_status_ex(const std::string& str) : m_message(str), m_status_code(UNKNOWN_ERROR) {}
+		ecg_status_ex(const std::string& str, const ecg_status& status) : m_message(str), m_status_code(status) {}
+
+		const char* what() const noexcept override { return m_message.c_str(); }
+		ecg_status get_status() { return m_status_code; }
+
+	private:
+		ecg_status m_status_code;
+		std::string m_message;
+
+	};
 }
 
 #endif

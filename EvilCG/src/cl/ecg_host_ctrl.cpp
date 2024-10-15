@@ -85,11 +85,17 @@ namespace ecg {
 	cl_int ecg_host_ctrl::default_init() {
 		cl_int op_res = CL_SUCCESS;
 		cl_uint num_platforms = 0;
+		m_is_initialized = false;
 
-		m_main_device = find_best_device();
-		m_context = cl::Context(m_main_device);
-		m_cmd_queue = cl::CommandQueue(m_context,
-			CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+		cl::Device dev = find_best_device();
+
+		if (dev != cl::Device()) {
+			m_main_device = dev;
+			m_context = cl::Context(m_main_device);
+			m_cmd_queue = cl::CommandQueue(m_context,
+				CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+			m_is_initialized = true;
+		}
 
 		return op_res;
 	}

@@ -2,12 +2,13 @@
 #define ECG_PROGRAM_H
 #include <CL/opencl.hpp>
 #include <ecg_global.h>
+#include <api_define.h>
 
 namespace ecg {
 	/// <summary>
 	/// Program wrapper for easy work with OpenCL program.
 	/// </summary>
-	class ecg_program {
+	class ECG_API ecg_program {
 	public:
 		virtual ~ecg_program() = default;
 		ecg_program(const ecg_program& prog) = delete;

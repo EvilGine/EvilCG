@@ -24,9 +24,15 @@ set(SOURCE_FILES
 	./src/cl/ecg_host_ctrl.cpp
 	./src/cl/ecg_program.cpp
 
+	./src/help/ecg_status.cpp
+	./src/help/ecg_geom.cpp
+
 	./src/ecg_api.cpp
 )
 
-add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
+# Build static library
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+target_compile_definitions(${PROJECT_NAME} PRIVATE ECG_DLL)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenCL::OpenCL)

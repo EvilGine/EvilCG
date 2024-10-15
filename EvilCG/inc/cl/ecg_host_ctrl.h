@@ -1,13 +1,14 @@
 #ifndef ECG_HOST_CTRL_H
 #define ECG_HOST_CTRL_H
 #include <ecg_global.h>
+#include <api_define.h>
 
 namespace ecg {
 	/// <summary>
 	/// Global OpenCL Host Controller.
 	/// Thread-Safe - Singleton.
 	/// </summary>
-	class ecg_host_ctrl {
+	class ECG_API ecg_host_ctrl {
 	public:
 		virtual ~ecg_host_ctrl() = default;
 		static ecg_host_ctrl& get_instance();
@@ -26,11 +27,10 @@ namespace ecg {
 		ecg_host_ctrl();
 
 	private:
-		std::vector <cl::Device> m_cpu_devices;
-		std::vector<cl::Device> m_gpu_devices;
 		cl::CommandQueue m_cmd_queue;
 		cl::Device m_main_device;
 		cl::Context m_context;
+		bool m_is_initialized;
 
 	};
 }
