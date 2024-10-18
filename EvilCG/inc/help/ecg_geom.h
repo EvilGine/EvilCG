@@ -1,6 +1,7 @@
 #ifndef ECG_MESH_H
 #define ECG_MESH_H
 #include <ecg_global.h>
+#include <api_define.h>
 
 namespace ecg {
 	struct mesh_t {
@@ -67,6 +68,22 @@ namespace ecg {
 		vec3_base p6;
 		vec3_base p7;
 	};
+
+	std::ostream& operator<<(std::ostream& os, const vec3_base& rhs);
+	vec3_base operator*(const mat3_base& lhs, const vec3_base& rhs);
+	vec3_base operator+(const vec3_base& lhs, const vec3_base& rhs);
+	vec3_base operator-(const vec3_base& lhs, const vec3_base& rhs);
+	vec3_base operator/(const vec3_base& lhs, const float rhs);
+
+	void operator+=(vec3_base& lhs, const vec3_base& rhs);
+	void operator+=(vec3_base& lhs, float rhs);
+
+	vec3_base add_vec(const vec3_base& lhs, const vec3_base& rhs);
+	vec3_base sub_vec(const vec3_base& lhs, const vec3_base& rhs);
+	vec3_base div_vec(const vec3_base& lhs, float rhs);
+
+	bool operator==(const vec3_base& lhs, const vec3_base& rhs);
+	bool compare_vec3_base(const vec3_base& lval, const vec3_base& rval);
 
 	const full_bounding_box default_full_bb = {};
 
