@@ -11,9 +11,12 @@ project (
 	DESCRIPTION "EvilCG - main computatuional library"
 )
 
+set(CMAKE_CXX_STANDARD 20)
+
 # External libraries
 find_package(glm CONFIG REQUIRED)
 find_package(OpenCL CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 include_directories(${OpenCL_INCLUDE_DIRS})
 
 # Include directories
@@ -24,6 +27,7 @@ set(SOURCE_FILES
 	./src/cl/ecg_host_ctrl.cpp
 	./src/cl/ecg_program.cpp
 
+	./src/help/ecg_helper.cpp
 	./src/help/ecg_status.cpp
 	./src/help/ecg_geom.cpp
 
@@ -35,4 +39,5 @@ add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE ECG_DLL)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenCL::OpenCL)

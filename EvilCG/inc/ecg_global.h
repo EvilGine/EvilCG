@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <utility>
 #include <ranges>
