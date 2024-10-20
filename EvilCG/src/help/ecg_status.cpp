@@ -12,4 +12,8 @@ namespace ecg {
 		if(m_status != SUCCESS)
 			throw ecg_status_ex(m_status);
 	}
+
+	ecg_status ecg_status_handler::get_status() const {
+		return m_status;
+	}
 }

@@ -11,7 +11,21 @@ namespace ecg {
 	const uint32_t EMPTY_INDEXES = 2;
 	const uint32_t EMPTY_VERTEXES = 3;
 
+	/// <summary>
+	/// Basic status code variable
+	/// </summary>
 	typedef uint32_t ecg_status;
+
+	/// <summary>
+	/// Status codes for different errors
+	/// </summary>
+	enum status_code {
+		INVALID_ARG = 1,
+		EMPTY_VERTEX_ARR,
+		EMPTY_INDEX_ARR,
+		EMPTY_NORM_ARR,
+		OPENCL_ERROR,
+	};
 
 	/// <summary>
 	/// Handler for ecg_status with exception if status not equal SUCCESS
@@ -23,6 +37,7 @@ namespace ecg {
 
 		ecg_status_handler& operator=(const ecg_status_handler& rhs);
 		ecg_status_handler& operator=(const ecg_status& rhs);
+		ecg_status get_status() const;
 
 	private:
 		ecg_status m_status;

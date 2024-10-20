@@ -4,12 +4,6 @@
 #include <api_define.h>
 
 namespace ecg {
-	struct mesh_t {
-		std::shared_ptr<glm::vec3> vertexes;
-		std::shared_ptr<glm::vec3> normals;
-		std::shared_ptr<uint32_t> indexes;
-	};
-
 	struct vec3_base {
 		float x;
 		float y;
@@ -69,8 +63,24 @@ namespace ecg {
 		vec3_base p7;
 	};
 
+	struct mesh_t {
+		vec3_base* vertexes;
+		uint32_t vertexes_size;
+
+		vec3_base* normals;
+		uint32_t normals_size;
+
+		uint32_t* indexes;
+		uint32_t indexes_size;
+
+		mesh_t() : 
+			vertexes(nullptr), vertexes_size(0),
+			indexes(nullptr), indexes_size(0),
+			normals(nullptr), normals_size(0) 
+		{}
+	};
+
 	std::ostream& operator<<(std::ostream& os, const vec3_base& rhs);
-	vec3_base operator*(const mat3_base& lhs, const vec3_base& rhs);
 	vec3_base operator+(const vec3_base& lhs, const vec3_base& rhs);
 	vec3_base operator-(const vec3_base& lhs, const vec3_base& rhs);
 	vec3_base operator/(const vec3_base& lhs, const float rhs);
@@ -78,12 +88,18 @@ namespace ecg {
 	void operator+=(vec3_base& lhs, const vec3_base& rhs);
 	void operator+=(vec3_base& lhs, float rhs);
 
-	vec3_base add_vec(const vec3_base& lhs, const vec3_base& rhs);
-	vec3_base sub_vec(const vec3_base& lhs, const vec3_base& rhs);
-	vec3_base div_vec(const vec3_base& lhs, float rhs);
+	extern "C" vec3_base ECG_API add_vec(const vec3_base& lhs, const vec3_base& rhs);
+	extern "C" vec3_base ECG_API sub_vec(const vec3_base& lhs, const vec3_base& rhs);
+	extern "C" vec3_base ECG_API div_vec(const vec3_base& lhs, float rhs);
 
 	bool operator==(const vec3_base& lhs, const vec3_base& rhs);
-	bool compare_vec3_base(const vec3_base& lval, const vec3_base& rval);
+	extern "C" bool ECG_API compare_vec3_base(const vec3_base& lval, const vec3_base& rval);
+
+	bool operator==(const bounding_box& lval, const bounding_box& rval);
+	extern "C" bool ECG_API compare_bounding_boxes(const bounding_box& lval, const bounding_box& rval);
+
+	bool operator==(const full_bounding_box& lval, const full_bounding_box& rval);
+	extern "C" bool ECG_API compare_full_bb(const full_bounding_box& lval, const full_bounding_box& rval);
 
 	const full_bounding_box default_full_bb = {};
 

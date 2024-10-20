@@ -13,8 +13,8 @@ namespace ecg {
 		virtual ~ecg_host_ctrl() = default;
 		static ecg_host_ctrl& get_instance();
 
+		cl::Device& get_device();
 		cl::Context& get_context();
-		cl::Device& get_main_device();
 		cl::CommandQueue& get_cmd_queue();
 
 	protected:

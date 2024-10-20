@@ -6,7 +6,7 @@
 
 TEST(ecg_api, init_ecg) {
 	ecg::ecg_host_ctrl& host_ctrl = ecg::ecg_host_ctrl::get_instance();
-	auto device = host_ctrl.get_main_device();
+	auto device = host_ctrl.get_device();
 	auto queue = host_ctrl.get_cmd_queue();
 	auto context = host_ctrl.get_context();
 
@@ -25,8 +25,20 @@ TEST(ecg_api, get_center) {
 }
 
 TEST(ecg_api, compute_aabb) {
+	bool compare_result = false;
+	ecg::bounding_box result_bb;
+	ecg::ecg_status status;
 	ecg::mesh_t mesh;
-	ecg::compute_aabb(&mesh);
+
+	result_bb = ecg::compute_aabb(nullptr, &status);
+	compare_result = ecg::compare_bounding_boxes(result_bb, ecg::default_bb);
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	ASSERT_TRUE(compare_result);
+
+	result_bb = ecg::compute_aabb(&mesh, &status);
+	compare_result = ecg::compare_bounding_boxes(result_bb, ecg::default_bb);
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	ASSERT_TRUE(compare_result);
 }
 
 TEST(ecg_api, compute_obb) {

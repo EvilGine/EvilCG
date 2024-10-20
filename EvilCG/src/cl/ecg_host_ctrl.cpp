@@ -5,7 +5,7 @@ namespace ecg {
 		return m_context;
 	}
 
-	cl::Device& ecg::ecg_host_ctrl::get_main_device() {
+	cl::Device& ecg::ecg_host_ctrl::get_device() {
 		return m_main_device;
 	}
 

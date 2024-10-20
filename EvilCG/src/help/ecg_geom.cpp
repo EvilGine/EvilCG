@@ -64,4 +64,16 @@ namespace ecg {
 	bool compare_vec3_base(const vec3_base& lval, const vec3_base& rval) {
 		return (lval.x == rval.x) && (lval.y == rval.y) && (lval.z == rval.z);
 	}
+	
+	bool compare_bounding_boxes(const bounding_box& lval, const bounding_box& rval) {
+		return (lval.min == rval.min) && (lval.max == rval.max);
+	}
+
+	bool operator==(const full_bounding_box& lval, const full_bounding_box& rval) {
+		return compare_full_bb(lval, rval);
+	}
+
+	bool compare_full_bb(const full_bounding_box& lval, const full_bounding_box& rval) {
+		return (lval.p0 == rval.p0) && (lval.p1 == rval.p1) && (lval.p2 == rval.p2) && (lval.p3 == rval.p3);
+	}
 }
