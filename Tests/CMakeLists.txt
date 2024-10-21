@@ -14,19 +14,32 @@ add_compile_definitions(GTEST_BUILD)
 find_package(GTest CONFIG REQUIRED)
 include_directories(../EvilCG/inc)
 
+find_package(OpenCL CONFIG REQUIRED)
+include_directories(${OpenCL_INCLUDE_DIRS})
+
 # Source files
 set(SOURCE_FILES
-	./src/ecg_compute_test.cpp
-	./src/ecg_debug_test.cpp
-	./src/ecg_core_test.cpp
-	./src/ecg_cl_test.cpp
-	./src/ecg_test.cpp
+	./src/ecg_api_test.cpp
+	./src/ecg_main.cpp
 )
 
 enable_testing()
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PRIVATE EvilCG)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenCL::OpenCL)
 target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
 
-target_compile_options(${PROJECT_NAME} PRIVATE -fsycl)
-target_link_options(${PROJECT_NAME} PRIVATE -fsycl)
+# Copy EvilCG.dll or EvilCG.so after build
+if (WIN32)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:EvilCG>"  # Source: EvilCG DLL
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>  # Destination: Test executable directory
+    )
+elseif (UNIX)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:EvilCG>"  # Source: EvilCG SO
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>  # Destination: Test executable directory
+    )
+endif()
