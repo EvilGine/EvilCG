@@ -23,8 +23,15 @@ namespace ecg {
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
 
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if(mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+			if (mesh == nullptr) { 
+				op_res = status_code::INVALID_ARG;
+				return result_bb;
+			}
+
+			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) {
+				op_res = status_code::EMPTY_VERTEX_ARR;
+				return result_bb;
+			}
 
 			cl::Program::Sources sources = { compute_aabb_code };
 			ecg_program program(context, dev, sources);
@@ -46,6 +53,8 @@ namespace ecg {
 			op_res = queue.enqueueReadBuffer(aabb_result, CL_FALSE, 0, sizeof(bounding_box), &result_bb);
 		}
 		catch (...) {
+			if (op_res == status_code::SUCCESS)
+				op_res = status_code::UNKNOWN_EXCEPTION;
 			if (status != nullptr)
 				*status = op_res.get_status();
 		}
