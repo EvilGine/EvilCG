@@ -5,7 +5,33 @@
 #include <cl/ecg_program.h>
 
 namespace ecg {
+	// TODO: write CL kernel for get_center
 	vec3_base get_center(mesh_t* mesh, ecg_status* status) {
+		ecg_status_handler op_res;
+
+		try {
+			if (mesh == nullptr) {
+				op_res = status_code::INVALID_ARG;
+				return vec3_base();
+			}
+
+			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) {
+				op_res = status_code::EMPTY_VERTEX_ARR;
+				return vec3_base();
+			}
+
+			vec3_base acc;
+			for (uint32_t id = 0; id < mesh->vertexes_size; ++id)
+				acc += mesh->vertexes[id];
+			return acc / mesh->vertexes_size;
+		}
+		catch (...) {
+			if (op_res == status_code::SUCCESS)
+				op_res = status_code::UNKNOWN_EXCEPTION;
+			if (status != nullptr)
+				*status = op_res.get_status();
+		}
+
 		return vec3_base();
 	}
 
@@ -46,11 +72,15 @@ namespace ecg {
 
 			op_res = queue.enqueueWriteBuffer(aabb_result, CL_FALSE, 0, sizeof(bounding_box), &default_bb);
 			op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, buffer_size, mesh->vertexes);
+			queue.finish();
+
 			op_res = program.execute(
 				queue, compute_aabb_name, global, local,
 				vertexes_buffer, vert_size,
 				aabb_result);
+
 			op_res = queue.enqueueReadBuffer(aabb_result, CL_FALSE, 0, sizeof(bounding_box), &result_bb);
+			queue.finish();
 		}
 		catch (...) {
 			if (op_res == status_code::SUCCESS)
@@ -63,6 +93,19 @@ namespace ecg {
 	}
 
 	full_bounding_box compute_obb(mesh_t* mesh, ecg_status* status) {
-		return full_bounding_box();
+		full_bounding_box result_obb;
+		ecg_status_handler op_res;
+
+		try {
+
+		}
+		catch (...) {
+			if (op_res == status_code::SUCCESS)
+				op_res = status_code::UNKNOWN_EXCEPTION;
+			if (status != nullptr)
+				*status = op_res.get_status();
+		}
+
+		return result_obb;
 	}
 }
