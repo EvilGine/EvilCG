@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #define ENABLE_ECG_CL
+#include <ecg_meshes.h>
 #include <ecg_api.h>
 
 TEST(ecg_api, init_ecg) {
@@ -34,6 +35,13 @@ TEST(ecg_api, get_center) {
 	compare_result = ecg::compare_vec3_base(result_center, ecg::vec3_base());
 	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
 	ASSERT_TRUE(compare_result);
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	for (size_t mesh_id = 0; mesh_id < mesh_inst.meshes.size(); ++mesh_id) {
+		result_center = ecg::get_center(&mesh_inst.meshes[mesh_id], &status);
+		compare_result = ecg::compare_vec3_base(result_center, ecg::vec3_base());
+		ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	}
 }
 
 TEST(ecg_api, compute_aabb) {

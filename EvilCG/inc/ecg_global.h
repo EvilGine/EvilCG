@@ -16,9 +16,11 @@
 #include <thread>
 #include <mutex>
 
+#include <filesystem>
 #include <stdint.h>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <iomanip>
 #include <utility>
 #include <ranges>

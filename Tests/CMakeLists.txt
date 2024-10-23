@@ -10,9 +10,12 @@ project (
 	DESCRIPTION "Tests - tests for EvilCG"
 )
 
+set(CMAKE_CXX_STANDARD 20)
+
 add_compile_definitions(GTEST_BUILD)
 find_package(GTest CONFIG REQUIRED)
 include_directories(../EvilCG/inc)
+include_directories(./inc)
 
 find_package(OpenCL CONFIG REQUIRED)
 include_directories(${OpenCL_INCLUDE_DIRS})
@@ -20,6 +23,7 @@ include_directories(${OpenCL_INCLUDE_DIRS})
 # Source files
 set(SOURCE_FILES
 	./src/ecg_api_test.cpp
+    ./src/ecg_meshes.cpp
 	./src/ecg_main.cpp
 )
 
@@ -43,3 +47,9 @@ elseif (UNIX)
         $<TARGET_FILE_DIR:${PROJECT_NAME}>  # Destination: Test executable directory
     )
 endif()
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory  
+    "${CMAKE_SOURCE_DIR}/Models" 
+    "$<TARGET_FILE_DIR:${PROJECT_NAME}>/Models"
+)

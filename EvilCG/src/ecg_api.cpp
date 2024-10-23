@@ -6,10 +6,12 @@
 
 namespace ecg {
 	// TODO: write CL kernel for get_center
-	vec3_base get_center(mesh_t* mesh, ecg_status* status) {
+	vec3_base get_center(const mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 
 		try {
+			if (status != nullptr) *status = status_code::SUCCESS;
+
 			if (mesh == nullptr) {
 				op_res = status_code::INVALID_ARG;
 				return vec3_base();
@@ -35,15 +37,16 @@ namespace ecg {
 		return vec3_base();
 	}
 
-	vec3_base summ_vertexes(mesh_t* mesh, ecg_status* status) {
+	vec3_base summ_vertexes(const mesh_t* mesh, ecg_status* status) {
 		return vec3_base();
 	}
 
-	bounding_box compute_aabb(mesh_t* mesh, ecg_status* status) {
+	bounding_box compute_aabb(const mesh_t* mesh, ecg_status* status) {
 		bounding_box result_bb = default_bb;
 		ecg_status_handler op_res;
 
 		try {
+			if (status != nullptr) *status = status_code::SUCCESS;
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
@@ -92,12 +95,12 @@ namespace ecg {
 		return result_bb;
 	}
 
-	full_bounding_box compute_obb(mesh_t* mesh, ecg_status* status) {
+	full_bounding_box compute_obb(const mesh_t* mesh, ecg_status* status) {
 		full_bounding_box result_obb;
 		ecg_status_handler op_res;
 
 		try {
-
+			if (status != nullptr) *status = status_code::SUCCESS;
 		}
 		catch (...) {
 			if (op_res == status_code::SUCCESS)
