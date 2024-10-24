@@ -20,16 +20,34 @@ namespace ecg {
 		NOT_EQUAL = -1,
 	};
 
-	ECG_API vec3_base get_center(const mesh_t* mesh, ecg_status* status = nullptr);
-	ECG_API vec3_base summ_vertexes(const mesh_t* mesh, ecg_status* status = nullptr);
+	// [+] Implemented
+	
+	/// <summary>
+	/// Compute Axis-Aligned Bounding Box for mesh
+	/// </summary>
+	/// <param name="mesh">Pointer to mesh</param>
+	/// <param name="status">Pointer to function status</param>
+	/// <returns></returns>
 	ECG_API bounding_box compute_aabb(const mesh_t* mesh, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// Convert bounding box structure to full_bounding_box struct
+	/// </summary>
+	/// <param name="bb">Default Bounding Box</param>
+	/// <returns></returns>
+	ECG_API full_bounding_box bb_to_full_bb(const bounding_box* bb);
+
+	// [?] Half Implemented
+	ECG_API vec3_base get_center(const mesh_t* mesh, ecg_status* status = nullptr);
 	ECG_API full_bounding_box compute_obb(const mesh_t* mesh, ecg_status* status = nullptr);
+	ECG_API std::vector<vec3_base> find_nearest_vertices(const mesh_t* mesh, const vec3_base* point, int k, ecg_status* status = nullptr);
+
+	// [-] Not implemented
+	ECG_API vec3_base summ_vertexes(const mesh_t* mesh, ecg_status* status = nullptr);
 	ECG_API cmp_res compare_meshes(const mesh_t* m1, const mesh_t* m2, ecg_status* status = nullptr);
 
 	ECG_API float compute_volume(const mesh_t* mesh, ecg_status* status = nullptr);
 	ECG_API float compute_surface_area(const mesh_t* mesh, ecg_status* status = nullptr);
-
-	ECG_API std::vector<vec3_base> find_nearest_vertices(const mesh_t* mesh, const vec3_base& point, int k, ecg_status* status = nullptr);
 
 	ECG_API mesh_t* smooth_mesh(const mesh_t* mesh, float lambda, int iterations, ecg_status* status = nullptr);
 	ECG_API mesh_t* simplify_mesh(const mesh_t* mesh, float reduction_factor, ecg_status* status = nullptr);

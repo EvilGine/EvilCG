@@ -59,9 +59,35 @@ TEST(ecg_api, compute_aabb) {
 	compare_result = ecg::compare_bounding_boxes(result_bb, ecg::default_bb);
 	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
 	ASSERT_TRUE(compare_result);
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	for (size_t mesh_id = 0; mesh_id < mesh_inst.meshes.size(); ++mesh_id) {
+		result_bb = ecg::compute_aabb(&mesh_inst.meshes[mesh_id], &status);
+		compare_result = ecg::compare_bounding_boxes(result_bb, ecg::default_bb);
+		ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	}
 }
 
 TEST(ecg_api, compute_obb) {
+	ecg::full_bounding_box result_bb;
+	bool compare_result = false;
+	ecg::ecg_status status;
 	ecg::mesh_t mesh;
-	ecg::compute_obb(&mesh);
+
+	result_bb = ecg::compute_obb(nullptr, &status);
+	compare_result = ecg::compare_full_bb(result_bb, ecg::full_bounding_box());
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	ASSERT_TRUE(compare_result);
+
+	result_bb = ecg::compute_obb(&mesh, &status);
+	compare_result = ecg::compare_full_bb(result_bb, ecg::full_bounding_box());
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	ASSERT_TRUE(compare_result);
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	for (size_t mesh_id = 0; mesh_id < mesh_inst.meshes.size(); ++mesh_id) {
+		result_bb = ecg::compute_obb(&mesh_inst.meshes[mesh_id], &status);
+		compare_result = ecg::compare_full_bb(result_bb, ecg::full_bounding_box());
+		ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	}
 }
