@@ -38,7 +38,7 @@ TEST(ecg_api, get_center) {
 
 	auto& mesh_inst = ecg_meshes::get_instance();
 	for (size_t mesh_id = 0; mesh_id < mesh_inst.meshes.size(); ++mesh_id) {
-		result_center = ecg::get_center(&mesh_inst.meshes[mesh_id], &status);
+		result_center = ecg::get_center(&mesh_inst.meshes[mesh_id].mesh, &status);
 		compare_result = ecg::compare_vec3_base(result_center, ecg::vec3_base());
 		ASSERT_EQ(status, ecg::status_code::SUCCESS);
 	}
@@ -62,9 +62,13 @@ TEST(ecg_api, compute_aabb) {
 
 	auto& mesh_inst = ecg_meshes::get_instance();
 	for (size_t mesh_id = 0; mesh_id < mesh_inst.meshes.size(); ++mesh_id) {
-		result_bb = ecg::compute_aabb(&mesh_inst.meshes[mesh_id], &status);
+		auto item = mesh_inst.meshes[mesh_id];
+		result_bb = ecg::compute_aabb(&item.mesh, &status);
 		compare_result = ecg::compare_bounding_boxes(result_bb, ecg::default_bb);
 		ASSERT_EQ(status, ecg::status_code::SUCCESS);
+
+		auto obj_save_path = item.full_path.replace_extension("").string() + "_test_aabb.obj";
+		ecg_meshes::save_bb_to_obj(&result_bb, obj_save_path);
 	}
 }
 
@@ -86,8 +90,12 @@ TEST(ecg_api, compute_obb) {
 
 	auto& mesh_inst = ecg_meshes::get_instance();
 	for (size_t mesh_id = 0; mesh_id < mesh_inst.meshes.size(); ++mesh_id) {
-		result_bb = ecg::compute_obb(&mesh_inst.meshes[mesh_id], &status);
+		auto item = mesh_inst.meshes[mesh_id];
+		result_bb = ecg::compute_obb(&item.mesh, &status);
 		compare_result = ecg::compare_full_bb(result_bb, ecg::full_bounding_box());
 		ASSERT_EQ(status, ecg::status_code::SUCCESS);
+
+		auto obj_save_path = item.full_path.replace_extension("").string() + "_test_obb.obj";
+		ecg_meshes::save_bb_to_obj(&result_bb, obj_save_path);
 	}
 }

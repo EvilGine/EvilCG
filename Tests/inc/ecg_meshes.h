@@ -2,18 +2,27 @@
 #define ECG_MESHES_H
 #include <ecg_api.h>
 
+struct ecg_test_mesh {
+	std::filesystem::path full_path;
+	ecg::mesh_t mesh;
+};
+
 class ecg_meshes {
 public:
-	std::vector<ecg::mesh_t> meshes;
+	std::vector<ecg_test_mesh> meshes;
 	static ecg_meshes& get_instance();
 	void load_meshes(std::string path_to_meshes = "");
 	virtual ~ecg_meshes();
 
+	static void save_bb_to_obj(const ecg::full_bounding_box* bb, std::string obj_file);
+	static void save_bb_to_obj(const ecg::bounding_box* bb, std::string obj_file);
+	static void save_mesh_to_obj(const ecg::mesh_t* mesh, std::string obj_file);
+
 private:
+	static std::string convert_bb_to_str(const ecg::full_bounding_box* bb);
+	ecg::vec3_base parse_vertex(const std::string& line);
+	ecg::mesh_t load_mesh_from_obj(std::string filepath);
 	ecg_meshes() = default;
 };
-
-ecg::vec3_base parse_vertex(const std::string& line);
-ecg::mesh_t load_mesh_from_obj(std::string filepath);
 
 #endif

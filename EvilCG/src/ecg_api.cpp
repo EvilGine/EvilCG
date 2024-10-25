@@ -97,8 +97,8 @@ namespace ecg {
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
 
-			bounding_box bb;
-			mat3_base cov_mat;
+			bounding_box bb = default_bb;
+			mat3_base cov_mat = null_mat3;
 			vec3_base center = get_center(mesh, status);
 			cl_float4 center_cl = { center.x, center.y, center.z, 0.0f };
 			const cl_int vertex_size = sizeof(vec3_base) / sizeof(float);
