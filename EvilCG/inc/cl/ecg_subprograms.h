@@ -319,8 +319,8 @@ namespace ecg {
 				const int offset = group_id * group_size;
 				float3 v1 = gid * 2 < vert_arr_len ? get_vertex(gid * 2, vertexes, vert_size) : (float3)(0);
 				float3 v2 = gid * 2 + 1 < vert_arr_len ? get_vertex(gid * 2 + 1, vertexes, vert_size) : (float3)(0);
-
 				float3 summ = v1 + v2;
+
 				local_acc[(offset + lid) * vert_size + 0] = summ.x;
 				local_acc[(offset + lid) * vert_size + 1] = summ.y;
 				local_acc[(offset + lid) * vert_size + 2] = summ.z;

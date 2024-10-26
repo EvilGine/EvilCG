@@ -6,7 +6,7 @@ namespace ecg {
 	/// <summary>
 	/// Basic status code variable
 	/// </summary>
-	typedef uint32_t ecg_status;
+	typedef int ecg_status;
 
 	/// <summary>
 	/// Status codes for different errors

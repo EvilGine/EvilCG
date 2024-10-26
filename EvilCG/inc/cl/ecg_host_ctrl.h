@@ -16,6 +16,7 @@ namespace ecg {
 		cl::Device& get_device();
 		cl::Context& get_context();
 		cl::CommandQueue& get_cmd_queue();
+		cl_int get_max_work_group_size() const;
 
 	protected:
 		template <std::ranges::range Iterable>

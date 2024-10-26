@@ -13,6 +13,11 @@ namespace ecg {
 		return m_cmd_queue;
 	}
 
+	cl_int ecg_host_ctrl::get_max_work_group_size() const {
+		if (m_main_device == cl::Device()) return 0;
+		return m_main_device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+	}
+
 	template <std::ranges::range Iterable>
 	cl::Device ecg_host_ctrl::choose_device(const Iterable& devices) {
 		cl::Device main_device;

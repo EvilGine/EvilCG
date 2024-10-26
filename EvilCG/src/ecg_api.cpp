@@ -33,7 +33,73 @@ namespace ecg {
 	}
 
 	vec3_base summ_vertexes(const mesh_t* mesh, ecg_status* status) {
-		return vec3_base();
+		ecg_status_handler op_res;
+		vec3_base result;
+
+		try {
+			if (status != nullptr) *status = status_code::SUCCESS;
+			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
+			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			const size_t work_group_sz = ctrl.get_max_work_group_size();
+			cl::Program::Sources sources = { summ_vertexes_code };
+			ecg_program program(context, dev, sources);
+
+			auto internal_summ = [&](const vec3_base* data, cl_int data_size) {
+				const float temp_groups = static_cast<float>(data_size) / work_group_sz;
+				const size_t work_groups = std::ceil(temp_groups);
+				
+				const size_t res_buffer_sz = temp_groups > 1.0f ? work_groups * sizeof(data[0]) : sizeof(vec3_base);
+				const size_t buffer_sz = sizeof(data[0]) * data_size;
+				const size_t full_sz = work_groups * work_group_sz;
+				std::vector<vec3_base> result;
+				result.resize(work_groups);
+
+				cl::Buffer res_buffer = cl::Buffer(context, CL_MEM_WRITE_ONLY, res_buffer_sz);
+				cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, buffer_sz);
+				cl::Buffer acc_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, full_sz * sizeof(mesh->vertexes[0]));
+
+				cl_int vert_sz = sizeof(vec3_base) / sizeof(float);
+				cl::NDRange local = work_group_sz;
+				cl::NDRange global = full_sz;
+
+				op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, buffer_sz, data);
+				op_res = queue.enqueueFillBuffer(res_buffer, (cl_int(0)), 0, res_buffer_sz);
+				op_res = queue.enqueueFillBuffer(acc_buffer, (cl_int(0)), 0, full_sz);
+				op_res = queue.finish();
+
+				op_res = program.execute(
+					queue, summ_vertexes_name, global, local, 
+					data_size, vert_sz,
+					vertexes_buffer, acc_buffer,
+					res_buffer
+				);
+
+				op_res = queue.enqueueReadBuffer(res_buffer, CL_FALSE, 0, res_buffer_sz, result.data());
+				queue.finish();
+				return result;
+			};
+			
+			std::vector<vec3_base> acc_vector;
+			acc_vector = internal_summ(mesh->vertexes, mesh->vertexes_size);
+			while (acc_vector.size() > 1) {
+				acc_vector = internal_summ(acc_vector.data(), acc_vector.size());
+			}
+			result = acc_vector[0];
+		}
+		catch (...) {
+			if (op_res == status_code::SUCCESS)
+				op_res = status_code::UNKNOWN_EXCEPTION;
+			if (status != nullptr)
+				*status = op_res.get_status();
+		}
+
+		return result;
 	}
 
 	bounding_box compute_aabb(const mesh_t* mesh, ecg_status* status) {
@@ -42,13 +108,13 @@ namespace ecg {
 
 		try {
 			if (status != nullptr) *status = status_code::SUCCESS;
+			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
+			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+			
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
-
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
 
 			cl::Program::Sources sources = { compute_aabb_code };
 			ecg_program program(context, dev, sources);
@@ -63,7 +129,7 @@ namespace ecg {
 
 			op_res = queue.enqueueWriteBuffer(aabb_result, CL_FALSE, 0, sizeof(bounding_box), &default_bb);
 			op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, buffer_size, mesh->vertexes);
-			queue.finish();
+			op_res = queue.finish();
 
 			op_res = program.execute(
 				queue, compute_aabb_name, global, local,
@@ -71,7 +137,7 @@ namespace ecg {
 				aabb_result);
 
 			op_res = queue.enqueueReadBuffer(aabb_result, CL_FALSE, 0, sizeof(bounding_box), &result_bb);
-			queue.finish();
+			op_res = queue.finish();
 		}
 		catch (...) {
 			if (op_res == status_code::SUCCESS)
@@ -120,7 +186,7 @@ namespace ecg {
 
 			op_res = queue.enqueueWriteBuffer(vertex_buffer, CL_FALSE, 0, vertex_buffer_size, mesh->vertexes);
 			op_res = queue.enqueueWriteBuffer(cov_mat_buffer, CL_FALSE, 0, sizeof(mat3_base), &cov_mat);
-			queue.finish();
+			op_res = queue.finish();
 
 			op_res = compute_obb.execute(
 				queue, compute_cov_mat_name, global, local,
@@ -129,7 +195,7 @@ namespace ecg {
 			);
 
 			op_res = queue.enqueueReadBuffer(cov_mat_buffer, CL_FALSE, 0, sizeof(mat3_base), &cov_mat);
-			queue.finish();
+			op_res = queue.finish();
 
 			cov_mat = cov_mat / static_cast<float>(mesh->vertexes_size);
 			svd_t svd_mat = compute_svd(cov_mat);
@@ -145,7 +211,7 @@ namespace ecg {
 
 			op_res = queue.enqueueWriteBuffer(inv_transf_buffer, CL_FALSE, 0, sizeof(inv_transf), &inv_transf);
 			op_res = queue.enqueueWriteBuffer(res_bb_buffer, CL_FALSE, 0, sizeof(bounding_box), &bb);
-			queue.finish();
+			op_res = queue.finish();
 
 			op_res = compute_obb.execute(
 				queue, compute_obb_name, global, local,
@@ -155,7 +221,7 @@ namespace ecg {
 			);
 
 			op_res = queue.enqueueReadBuffer(res_bb_buffer, CL_FALSE, 0, sizeof(bounding_box), &bb);
-			queue.finish();
+			op_res = queue.finish();
 
 			result_obb = bb_to_full_bb(&bb);
 			result_obb.p0 = center + transf * result_obb.p0;

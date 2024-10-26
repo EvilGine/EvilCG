@@ -16,6 +16,7 @@
 #include <thread>
 #include <mutex>
 
+#include <type_traits>
 #include <filesystem>
 #include <stdint.h>
 #include <iostream>
