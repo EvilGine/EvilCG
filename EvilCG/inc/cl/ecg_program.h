@@ -35,6 +35,7 @@ namespace ecg {
 			cl::Kernel kernel(m_program, kernel_name.c_str(), &op_res);
 			(set_arg_with_log(kernel, args), ...);
 			op_res = queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
+			queue.finish();
 			return op_res;
 		}
 

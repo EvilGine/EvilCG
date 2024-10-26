@@ -101,6 +101,10 @@ namespace ecg {
 	bool operator==(const full_bounding_box& lval, const full_bounding_box& rval);
 	extern "C" bool ECG_API compare_full_bb(const full_bounding_box& lval, const full_bounding_box& rval);
 
+	std::ostream& operator<<(std::ostream& os, const mat3_base& rhs);
+	vec3_base operator*(const mat3_base& lhs, const vec3_base& rhs);
+	mat3_base operator/(const mat3_base& mat, const float del);
+
 	const full_bounding_box default_full_bb = {};
 
 	const bounding_box default_bb = {
