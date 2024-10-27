@@ -18,8 +18,9 @@ namespace ecg {
 			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
 
 			vec3_base acc;
-			for (uint32_t id = 0; id < mesh->vertexes_size; ++id)
-				acc += mesh->vertexes[id];
+			//for (uint32_t id = 0; id < mesh->vertexes_size; ++id)
+			//	acc += mesh->vertexes[id];
+			acc = summ_vertexes(mesh, status);
 			return acc / mesh->vertexes_size;
 		}
 		catch (...) {
