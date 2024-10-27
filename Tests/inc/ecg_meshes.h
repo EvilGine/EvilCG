@@ -19,12 +19,15 @@ public:
 	static void save_bb_to_obj(const ecg::full_bounding_box* bb, std::string obj_file);
 	static void save_bb_to_obj(const ecg::bounding_box* bb, std::string obj_file);
 	static void save_mesh_to_obj(const ecg::mesh_t* mesh, std::string obj_file);
+	static std::string to_string(const ecg::vec3_base& vec);
 	static void init_mesh(ecg::mesh_t* mesh, size_t size);
 	static void delete_mesh(ecg::mesh_t* mesh);
 
 private:
-	static std::string convert_bb_to_str(const ecg::full_bounding_box* bb);
+	void parse_face(const std::string& line, std::vector<uint32_t>& indices);
 	ecg::vec3_base parse_vertex(const std::string& line);
+
+	static std::string convert_bb_to_str(const ecg::full_bounding_box* bb);
 	ecg::mesh_t load_mesh_from_obj(std::string filepath);
 	void internal_init();
 	ecg_meshes();

@@ -13,6 +13,7 @@ namespace ecg {
 	/// </summary>
 	enum status_code {
 		SUCCESS = 0,
+		NOT_TRIANGULATED_MESH,
 		UNKNOWN_EXCEPTION,
 		EMPTY_VERTEX_ARR,
 		EMPTY_INDEX_ARR,

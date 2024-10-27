@@ -76,13 +76,23 @@ namespace ecg {
 	/// If the mesh has no vertices, returns a vec3_base initialized to zero or another appropriate default.</returns>
 	ECG_API vec3_base get_center(const mesh_t* mesh, ecg_status* status = nullptr);
 	
-	// [+] Should be added next
+	/// <summary>
+	/// Computes the total surface area of a 3D mesh. The surface area is calculated by iterating over each triangle in the mesh
+	/// and summing up the individual areas. Each triangle is defined by three indexed vertices in the mesh's vertex array.
+	/// </summary>
+	/// <param name="mesh">Pointer to the mesh data structure containing vertex and index arrays that define the mesh geometry.</param>
+	/// <param name="status">Optional pointer to an ecg_status variable that will hold the status of the function execution,
+	/// indicating success or describing any errors encountered during computation (e.g., null pointer, empty or invalid mesh).</param>
+	/// <returns>
+	/// The computed surface area as a `float` value. If the mesh is invalid or an error occurs, the function returns `-FLT_MAX`.
+	/// </returns>
 	ECG_API float compute_surface_area(const mesh_t* mesh, ecg_status* status = nullptr);
+	
+	// [+] Should be added next
 	ECG_API std::vector<vec3_base> find_nearest_vertices(const mesh_t* mesh, const vec3_base* point, int k, ecg_status* status = nullptr);
 
 	// [-] Not implemented
 	ECG_API cmp_res compare_meshes(const mesh_t* m1, const mesh_t* m2, ecg_status* status = nullptr);
-
 	ECG_API float compute_volume(const mesh_t* mesh, ecg_status* status = nullptr);
 
 	ECG_API mesh_t* smooth_mesh(const mesh_t* mesh, float lambda, int iterations, ecg_status* status = nullptr);

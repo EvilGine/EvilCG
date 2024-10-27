@@ -120,3 +120,38 @@ TEST(ecg_api, compute_obb) {
 		ecg_meshes::save_bb_to_obj(&result_bb, obj_save_path);
 	}
 }
+
+TEST(ecg_api, compute_surface_area) {
+	float result_surf_area = 0.0f;
+	bool compare_result = false;
+	ecg::ecg_status status;
+	ecg::mesh_t mesh;
+
+	result_surf_area = ecg::compute_surface_area(nullptr, &status);
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
+
+	result_surf_area = ecg::compute_surface_area(&mesh, &status);
+	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
+	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
+
+	mesh.indexes_size = 4;
+	mesh.indexes = new uint32_t[4];
+	result_surf_area = ecg::compute_surface_area(&mesh, &status);
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
+
+	mesh.vertexes_size = 4;
+	mesh.vertexes = new ecg::vec3_base[4];
+	result_surf_area = ecg::compute_surface_area(&mesh, &status);
+	ASSERT_EQ(status, ecg::status_code::NOT_TRIANGULATED_MESH);
+	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	for (size_t mesh_id = 0; mesh_id < mesh_inst.loaded_meshes.size(); ++mesh_id) {
+		auto item = mesh_inst.loaded_meshes[mesh_id];
+		result_surf_area = ecg::compute_surface_area(&item.mesh, &status);
+		ASSERT_EQ(status, ecg::status_code::SUCCESS);
+		ASSERT_NE(result_surf_area, -FLT_MAX);
+	}
+}
