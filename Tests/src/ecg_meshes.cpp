@@ -26,10 +26,75 @@ void ecg_meshes::save_mesh_to_obj(const ecg::mesh_t* mesh, std::string obj_file)
     file.open(obj_file);
 
     if (file.is_open()) {
+        // Write vertices
+        for (uint32_t i = 0; i < mesh->vertexes_size; ++i) {
+            file << "v " << to_string(mesh->vertexes[i]) << std::endl;
+        }
 
+        // Write normals
+        for (uint32_t i = 0; i < mesh->normals_size; ++i) {
+            file << "vn " << to_string(mesh->normals[i]) << std::endl;
+        }
+
+        // Write faces
+        for (uint32_t i = 0; i < mesh->indexes_size; i += 3) {
+            file << "f ";
+            for (uint32_t j = 0; j < 3; ++j) {
+                file << (mesh->indexes[i + j] + 1);
+                if (mesh->normals_size > 0) {
+                    file << "//" << (mesh->indexes[i + j] + 1);
+                }
+                file << " ";
+            }
+            file << std::endl;
+        }
     }
 
     file.close();
+}
+
+std::string ecg_meshes::to_string(const ecg::vec3_base& vec) {
+    return std::to_string(vec.x) + " " + std::to_string(vec.y) + " " + std::to_string(vec.z);
+}
+
+void ecg_meshes::init_mesh(ecg::mesh_t* mesh, size_t size) {
+    if (mesh == nullptr) return;
+
+    mesh->vertexes_size = mesh->normals_size = size;
+
+    size_t triangle_count = size / 3;
+    size_t index_count = triangle_count * 3;
+    mesh->indexes_size = index_count;
+
+    mesh->vertexes = new ecg::vec3_base[size];
+    mesh->normals = new ecg::vec3_base[size];
+    mesh->indexes = new uint32_t[index_count];
+
+    uint32_t cnt = 1;
+    for (uint32_t i = 0; i < size; ++i) {
+        mesh->vertexes[i] = ecg::vec3_base(cnt, cnt * 2.0f, cnt * 3.0f);
+        mesh->normals[i] = ecg::vec3_base(0.0f, 1.0f, 0.0f);
+        ++cnt;
+    }
+
+    for (uint32_t i = 0; i < triangle_count; ++i) {
+        mesh->indexes[i * 3] = i * 3;
+        mesh->indexes[i * 3 + 1] = i * 3 + 1;
+        mesh->indexes[i * 3 + 2] = i * 3 + 2;
+    }
+}
+
+void ecg_meshes::delete_mesh(ecg::mesh_t* mesh) {
+    if (mesh == nullptr) return;
+    
+    delete[] mesh->vertexes;
+    mesh->vertexes_size = 0;
+
+    delete[] mesh->normals;
+    mesh->normals_size = 0;
+
+    delete[] mesh->indexes;
+    mesh->indexes_size = 0;
 }
 
 void ecg_meshes::load_meshes(std::string path_to_meshes) {
@@ -41,14 +106,18 @@ void ecg_meshes::load_meshes(std::string path_to_meshes) {
         if (fl_path.extension() == ".obj" && fl_path.filename().string().find("_res.obj") == std::string::npos) {
             if (fl_path.filename().string().find("_test") != std::string::npos) continue;
             ecg::mesh_t mesh = load_mesh_from_obj(fl_path.string());
-            meshes.push_back(ecg_test_mesh{ fl_path, mesh});
+            loaded_meshes.push_back(ecg_test_mesh{ fl_path, mesh});
         }
 	}
 }
 
 ecg_meshes::~ecg_meshes() {
-    for (auto& item : meshes) {
-        delete[] item.mesh.vertexes;
+    for (auto& item : template_meshes) {
+        delete_mesh(&item.mesh);
+    }
+
+    for (auto& item : loaded_meshes) {
+        delete_mesh(&item.mesh);
     }
 }
 
@@ -95,6 +164,16 @@ ecg::vec3_base ecg_meshes::parse_vertex(const std::string& line) {
     return vec;
 }
 
+void ecg_meshes::parse_face(const std::string& line, std::vector<uint32_t>& indices) {
+    std::istringstream s(line.substr(2));
+    std::string vertex;
+    while (s >> vertex) {
+        size_t first_slash = vertex.find('/');
+        int index = std::stoi(vertex.substr(0, first_slash)) - 1;  // OBJ indices start at 1
+        indices.push_back(index);
+    }
+}
+
 ecg::mesh_t ecg_meshes::load_mesh_from_obj(std::string filepath) {
     ecg::mesh_t mesh;
     std::string line;
@@ -103,12 +182,16 @@ ecg::mesh_t ecg_meshes::load_mesh_from_obj(std::string filepath) {
     file.open(filepath);
 
     std::vector<ecg::vec3_base> obj_vertexes;
+    std::vector<uint32_t> obj_indexes;
 
     if (file.is_open()) {
         while (std::getline(file, line)) {
             if (line[0] == 'v' && line[1] == ' ') {
                 ecg::vec3_base vec = parse_vertex(line);
                 obj_vertexes.push_back(vec);
+            }
+            else if (line.rfind("f ", 0) == 0) { 
+                parse_face(line, obj_indexes);
             }
         }
         file.close();
@@ -118,5 +201,26 @@ ecg::mesh_t ecg_meshes::load_mesh_from_obj(std::string filepath) {
     mesh.vertexes = new ecg::vec3_base[obj_vertexes.size()];
     std::memcpy(mesh.vertexes, obj_vertexes.data(), obj_vertexes.size() * sizeof(ecg::vec3_base));
 
+    mesh.indexes_size = obj_indexes.size();
+    mesh.indexes = new uint32_t[obj_indexes.size()];
+    std::memcpy(mesh.indexes, obj_indexes.data(), obj_indexes.size() * sizeof(uint32_t));
+
     return mesh;
+}
+
+void ecg_meshes::internal_init() {
+    template_meshes.resize(10);
+    const size_t increment = 1024;
+    size_t init_size = 13;
+
+    for (auto& item : template_meshes) {
+        item.full_path = "mesh_" + std::to_string(init_size);
+        init_mesh(&item.mesh, init_size);
+        init_size += increment;
+    }
+}
+
+ecg_meshes::ecg_meshes() {
+    static std::once_flag init_flg;
+    std::call_once(init_flg, [this]() { this->internal_init(); });
 }

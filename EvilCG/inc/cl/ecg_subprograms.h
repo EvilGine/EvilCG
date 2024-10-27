@@ -118,38 +118,44 @@ namespace ecg {
 
 	const std::string atomic_add_f =
 		NAME_OF(
-			inline void atomic_add_f(volatile __global float* source, const float add_val) {
+			void __attribute__((always_inline)) atomic_add_f(volatile __global float* source, const float val) {
 				union {
-					unsigned int int_value;
-					float float_value;
-				} old_union;
-
+					uint  u32;
+					float f32;
+				} next;
 				union {
-					unsigned int int_value;
-					float float_value;
-				} new_union;
-
+					uint  u32;
+					float f32;
+				} expected;
+				union {
+					uint  u32;
+					float f32;
+				} current;
+				current.f32 = *source;
 				do {
-					old_union.float_value = *source;
-					new_union.float_value = old_union.float_value + add_val;
-				} while (atomic_cmpxchg((__global unsigned int*) source, old_union.int_value, new_union.int_value) != old_union.int_value);
+					next.f32 = (expected.f32 = current.f32) + val;
+					current.u32 = atomic_cmpxchg((volatile global uint*)source, expected.u32, next.u32);
+				} while (current.u32 != expected.u32);
 			}
 
-			inline void atomic_add_fl(volatile __local float* source, const float add_val) {
+			void __attribute__((always_inline)) atomic_add_fl(volatile __local float* source, const float val) {
 				union {
-					unsigned int int_value;
-					float float_value;
-				} old_union;
-
+					uint  u32;
+					float f32;
+				} next;
 				union {
-					unsigned int int_value;
-					float float_value;
-				} new_union;
-
+					uint  u32;
+					float f32;
+				} expected;
+				union {
+					uint  u32;
+					float f32;
+				} current;
+				current.f32 = *source;
 				do {
-					old_union.float_value = *source;
-					new_union.float_value = old_union.float_value + add_val;
-				} while (atomic_cmpxchg((__local unsigned int*) source, old_union.int_value, new_union.int_value) != old_union.int_value);
+					next.f32 = (expected.f32 = current.f32) + val;
+					current.u32 = atomic_cmpxchg((volatile __local uint*)source, expected.u32, next.u32);
+				} while (current.u32 != expected.u32);
 			}
 		);
 
@@ -168,26 +174,58 @@ namespace ecg {
 
 	const std::string get_vert_len =
 		NAME_OF(
-			float get_len(float3 vert) {
-				return (vert.x * vert.x + vert.y * vert.y + vert.z * vert.z);
+			float get_len_fl3(float3 vert) {
+				return sqrt(vert.x * vert.x + vert.y * vert.y + vert.z * vert.z);
 			}
 
-			float get_len(float4 vert) {
-				return (vert.x * vert.x + vert.y * vert.y + vert.z * vert.z + vert.w * vert.w);
+			float get_len_fl4(float4 vert) {
+				return sqrt(vert.x * vert.x + vert.y * vert.y + vert.z * vert.z + vert.w * vert.w);
 			}
 		);
 
 	const std::string get_vertex =
 		NAME_OF(
-			float3 get_vertex(int gid, volatile __global float* vertexes, int vert_size) { \n
+			float3 get_vertex(int id, volatile __global float* vertexes, int vert_size) { \n
 				return (float3)( \n
-					vertexes[gid * vert_size + 0], \n
-					vertexes[gid * vert_size + 1], \n
-					vertexes[gid * vert_size + 2] \n
+					vertexes[id * vert_size + 0], \n
+					vertexes[id * vert_size + 1], \n
+					vertexes[id * vert_size + 2] \n
 				); \n
 			} \n
 		);
 
+	const std::string cross_product =
+		NAME_OF(
+			float3 cross_product(float3 a, float3 b) {
+				return (float3)(
+					a.y * b.z - a.z * b.y,
+					a.z * b.x - a.x * b.z,
+					a.x * b.y - a.y * b.x
+				);
+			}
+		);
+
+	const std::string calculate_surf_area =
+		cross_product +
+		get_vert_len +
+		get_vertex +
+		NAME_OF(
+			float calculate_surf_area(
+				volatile __global float* vertexes, 
+				int ind_1, int ind_2, int ind_3,
+				int vert_size
+			) { \n
+				float3 v1 = get_vertex(ind_1, vertexes, vert_size); // A \n
+				float3 v2 = get_vertex(ind_2, vertexes, vert_size); // B \n
+				float3 v3 = get_vertex(ind_3, vertexes, vert_size); // C \n
+				
+				float3 ab = v2 - v1;
+				float3 ac = v3 - v1;
+
+				float3 cross = cross_product(ab, ac);
+				return get_len_fl3(cross) / 2.0f;
+			}
+		);
 
 	const std::string to_mesh_name = "to_mesh";
 	const std::string to_mesh_code =
@@ -319,8 +357,8 @@ namespace ecg {
 				const int offset = group_id * group_size;
 				float3 v1 = gid * 2 < vert_arr_len ? get_vertex(gid * 2, vertexes, vert_size) : (float3)(0);
 				float3 v2 = gid * 2 + 1 < vert_arr_len ? get_vertex(gid * 2 + 1, vertexes, vert_size) : (float3)(0);
-
 				float3 summ = v1 + v2;
+
 				local_acc[(offset + lid) * vert_size + 0] = summ.x;
 				local_acc[(offset + lid) * vert_size + 1] = summ.y;
 				local_acc[(offset + lid) * vert_size + 2] = summ.z;
@@ -474,6 +512,41 @@ namespace ecg {
 					atomic_max_f(&bounding_box[4], max[1]);
 					atomic_max_f(&bounding_box[5], max[2]);
 				}
+			}
+		);
+
+	const std::string compute_surface_area_name = "compute_surface_area";
+	const std::string compute_surface_area_code =
+		enable_atomics_def +
+		atomic_add_f +
+		calculate_surf_area +
+		NAME_OF(
+			__kernel void compute_surface_area( \n
+				__global float* vertexes, int vertexes_size, \n
+				__global int* indexes, int indexes_size, \n
+				int vert_size, __global float* surface_area
+			) { \n
+				const int gid = get_global_id(0); \n 
+				const int lid = get_local_id(0);
+				__local float local_surf_area; \n
+				
+				if(lid == 0) local_surf_area = 0.0f;
+				barrier(CLK_LOCAL_MEM_FENCE);
+
+				int surf_id = gid * 3;
+				if (surf_id < indexes_size &&
+					surf_id + 1 < indexes_size &&
+					surf_id + 2 < indexes_size) {
+					const int ind_1 = indexes[surf_id];
+					const int ind_2 = indexes[surf_id + 1];
+					const int ind_3 = indexes[surf_id + 2];
+
+					float temp = calculate_surf_area(vertexes, ind_1, ind_2, ind_3, vert_size);
+					atomic_add_fl(&local_surf_area, temp);
+				}
+
+				barrier(CLK_LOCAL_MEM_FENCE);
+				if(lid == 0) atomic_add_f(surface_area, local_surf_area);
 			}
 		);
 }

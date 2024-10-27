@@ -6,13 +6,14 @@ namespace ecg {
 	/// <summary>
 	/// Basic status code variable
 	/// </summary>
-	typedef uint32_t ecg_status;
+	typedef int ecg_status;
 
 	/// <summary>
 	/// Status codes for different errors
 	/// </summary>
 	enum status_code {
 		SUCCESS = 0,
+		NOT_TRIANGULATED_MESH,
 		UNKNOWN_EXCEPTION,
 		EMPTY_VERTEX_ARR,
 		EMPTY_INDEX_ARR,

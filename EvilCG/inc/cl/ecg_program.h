@@ -5,6 +5,19 @@
 #include <api_define.h>
 
 namespace ecg {
+	template <typename T>
+	constexpr bool is_opencl_type =
+		std::is_same_v<T, cl_char> || std::is_same_v<T, cl_uchar> ||
+		std::is_same_v<T, cl_short> || std::is_same_v<T, cl_ushort> ||
+		std::is_same_v<T, cl_int> || std::is_same_v<T, cl_uint> ||
+		std::is_same_v<T, cl_long> || std::is_same_v<T, cl_ulong> ||
+		std::is_same_v<T, cl_float> || std::is_same_v<T, cl_double> ||
+		std::is_same_v<T, cl_float2> || std::is_same_v<T, cl_float3> ||
+		std::is_same_v<T, cl_float4> || std::is_same_v<T, cl_float8> ||
+		std::is_same_v<T, cl_half> || std::is_same_v<T, cl_mem> ||
+		std::is_same_v<T, cl_sampler> || std::is_same_v<T, cl_event> ||
+		std::is_same_v<T, cl::Buffer>;
+
 	/// <summary>
 	/// Program wrapper for easy work with OpenCL program.
 	/// </summary>
@@ -26,8 +39,12 @@ namespace ecg {
 			cl_int arg_index = 0;
 
 			auto set_arg_with_log = [&](cl::Kernel& kernel, auto& arg) {
+				using ArgType = std::decay_t<decltype(arg)>;
+				static_assert(is_opencl_type<ArgType>,
+					"Argument type is not supported. Only OpenCL types are allowed (e.g., cl_int, cl_uint, cl_float)."
+				);
 				return kernel.setArg(arg_index++, arg);
-				};
+			};
 
 			if (!m_is_built)
 				return CL_BUILD_PROGRAM_FAILURE;
