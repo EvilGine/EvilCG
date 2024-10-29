@@ -338,4 +338,89 @@ namespace ecg {
 
 		return result;
 	}
+
+	cmp_res compare_meshes(const mesh_t* m1, const mesh_t* m2, mat3_base* delta_transform, ecg_status* status) {
+		cmp_res result = cmp_res::UNDEFINED;
+		ecg_status_handler op_res;
+
+		try {
+			if (status != nullptr) *status = status_code::SUCCESS;
+			if (m1 == nullptr || m2 == nullptr) op_res = status_code::INVALID_ARG;
+			if (m1->indexes == nullptr || m1->indexes_size <= 0 || 
+				m2->indexes == nullptr || m2->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
+			if (m1->vertexes == nullptr || m1->vertexes_size <= 0 ||
+				m2->vertexes == nullptr || m2->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+			if (m1->indexes_size % 3 != 0 || m2->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
+		
+			const vec3_base m1_center = get_center(m1, status);
+			const vec3_base m2_center = get_center(m1, status);
+		
+			
+		}
+		catch (...) {
+			if (op_res == status_code::SUCCESS)
+				op_res = status_code::UNKNOWN_EXCEPTION;
+			if (status != nullptr)
+				*status = op_res.get_status();
+		}
+
+		return result;
+	}
+
+	mat3_base compute_covariance_matrix(const mesh_t* mesh, ecg_status* status) {
+		mat3_base cov_mat = null_mat3;
+		ecg_status_handler op_res;
+
+		try {
+			if (status != nullptr) *status = status_code::SUCCESS;
+			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
+			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			bounding_box bb = default_bb;
+			vec3_base center = get_center(mesh, status);
+			cl_float4 center_cl = { center.x, center.y, center.z, 0.0f };
+			const cl_int vertex_size = sizeof(vec3_base) / sizeof(float);
+
+			cl_int vertex_buffer_size = mesh->vertexes_size * sizeof(mesh->vertexes[0]);
+			cl::Buffer cov_mat_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(cov_mat));
+			cl::Buffer vertex_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_buffer_size);
+
+			cl::Program::Sources obb_sources = {
+				enable_atomics_def,
+				get_vertex,
+				compute_cov_mat_code,
+				compute_obb_code
+			};
+
+			ecg_program compute_obb(context, dev, obb_sources);
+			cl::NDRange global = mesh->vertexes_size;
+			cl::NDRange local = cl::NullRange;
+
+			op_res = queue.enqueueWriteBuffer(vertex_buffer, CL_FALSE, 0, vertex_buffer_size, mesh->vertexes);
+			op_res = queue.enqueueWriteBuffer(cov_mat_buffer, CL_FALSE, 0, sizeof(mat3_base), &cov_mat);
+			op_res = queue.finish();
+
+			op_res = compute_obb.execute(
+				queue, compute_cov_mat_name, global, local,
+				vertex_buffer, vertex_size, center_cl,
+				cov_mat_buffer
+			);
+
+			op_res = queue.enqueueReadBuffer(cov_mat_buffer, CL_FALSE, 0, sizeof(mat3_base), &cov_mat);
+			op_res = queue.finish();
+		}
+		catch (...) {
+			if (op_res == status_code::SUCCESS)
+				op_res = status_code::UNKNOWN_EXCEPTION;
+			if (status != nullptr)
+				*status = op_res.get_status();
+		}
+
+		return cov_mat;
+	}
 }

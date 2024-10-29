@@ -202,3 +202,35 @@ TEST(ecg_api, compute_surface_area) {
 		timer.end();
 	}
 }
+
+TEST(ecg_api, compute_covariance_matrix) {
+	bool compare_result = false;
+	ecg::mat3_base cov_matrix;
+	ecg::ecg_status status;
+	ecg::mesh_t mesh;
+	timer_t timer;
+
+	timer.start();
+	cov_matrix = ecg::compute_covariance_matrix(nullptr, &status);
+	compare_result = ecg::compare_mat3(cov_matrix, ecg::null_mat3);
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	ASSERT_TRUE(compare_result);
+	timer.end();
+
+	timer.start();
+	cov_matrix = ecg::compute_covariance_matrix(&mesh, &status);
+	compare_result = ecg::compare_mat3(cov_matrix, ecg::null_mat3);
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	ASSERT_TRUE(compare_result);
+	timer.end();
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	for (size_t mesh_id = 0; mesh_id < mesh_inst.loaded_meshes.size(); ++mesh_id) {
+		timer.start();
+		auto item = mesh_inst.loaded_meshes[mesh_id];
+		cov_matrix = ecg::compute_covariance_matrix(&item.mesh, &status);
+		compare_result = ecg::compare_mat3(cov_matrix, ecg::null_mat3);
+		ASSERT_EQ(status, ecg::status_code::SUCCESS);
+		timer.end();
+	}
+}

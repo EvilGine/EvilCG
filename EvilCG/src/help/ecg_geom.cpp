@@ -77,6 +77,25 @@ namespace ecg {
 		return (lval.p0 == rval.p0) && (lval.p1 == rval.p1) && (lval.p2 == rval.p2) && (lval.p3 == rval.p3);
 	}
 
+	bool operator==(const mat3_base& lval, const mat3_base rval) {
+		return compare_mat3(lval, rval);
+	}
+	
+	bool compare_mat3(const mat3_base& lval, const mat3_base& rval) {
+		return
+			std::abs(lval.m00 - rval.m00) <= epsilon &&
+			std::abs(lval.m01 - rval.m01) <= epsilon &&
+			std::abs(lval.m02 - rval.m02) <= epsilon &&
+
+			std::abs(lval.m10 - rval.m10) <= epsilon &&
+			std::abs(lval.m11 - rval.m11) <= epsilon &&
+			std::abs(lval.m12 - rval.m12) <= epsilon &&
+
+			std::abs(lval.m20 - rval.m20) <= epsilon &&
+			std::abs(lval.m21 - rval.m21) <= epsilon &&
+			std::abs(lval.m22 - rval.m22) <= epsilon;
+	}
+
 	std::ostream& operator<<(std::ostream& os, const mat3_base& rhs) {
 		std::stringstream ss;
 		ss << "{" << std::endl;
