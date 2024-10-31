@@ -8,6 +8,13 @@
 #include <help/ecg_geom.h>
 
 namespace ecg {
+	void delete_array(array_t* arr) {
+		if (arr != nullptr) {
+			delete[] arr->arr_ptr;
+			arr->arr_sz = 0;
+		}
+	}
+
 	vec3_base get_center(const mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 

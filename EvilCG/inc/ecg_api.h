@@ -21,6 +21,13 @@ namespace ecg {
 	};
 
 	/// <summary>
+	/// Delete array_t that was allocated in library
+	/// </summary>
+	/// <param name="arr"></param>
+	/// <returns></returns>
+	ECG_API void delete_array(array_t* arr);
+
+	/// <summary>
 	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
 	/// The AABB is a box aligned with the coordinate axes that encloses the mesh, providing 
 	/// the minimum and maximum points in each axis direction.

@@ -6,6 +6,18 @@
 namespace ecg {
 	const float epsilon = 1e-5f;
 
+	struct array_t {
+		void* arr_ptr;
+		uint32_t arr_sz;
+
+		array_t() :
+			arr_ptr(nullptr),
+			arr_sz(0) {}
+	
+		array_t(void* ptr, uint32_t size) :
+			arr_ptr(ptr), arr_sz(size) {}
+	};
+
 	struct vec3_base {
 		float x;
 		float y;
