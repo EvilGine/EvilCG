@@ -1,6 +1,7 @@
 #ifndef TIMER_H
 #define TIMER_H
-#include <ecg_api.h>
+#include <chrono>
+#include <ctime>
 
 class timer_t {
 public:

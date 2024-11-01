@@ -4,6 +4,20 @@
 #include <api_define.h>
 
 namespace ecg {
+	const float epsilon = 1e-5f;
+
+	struct array_t {
+		void* arr_ptr;
+		uint32_t arr_sz;
+
+		array_t() :
+			arr_ptr(nullptr),
+			arr_sz(0) {}
+	
+		array_t(void* ptr, uint32_t size) :
+			arr_ptr(ptr), arr_sz(size) {}
+	};
+
 	struct vec3_base {
 		float x;
 		float y;
@@ -100,6 +114,9 @@ namespace ecg {
 
 	bool operator==(const full_bounding_box& lval, const full_bounding_box& rval);
 	extern "C" bool ECG_API compare_full_bb(const full_bounding_box& lval, const full_bounding_box& rval);
+
+	bool operator==(const mat3_base& lval, const mat3_base rval);
+	extern "C" bool ECG_API compare_mat3(const mat3_base& lval, const mat3_base& rval);
 
 	std::ostream& operator<<(std::ostream& os, const mat3_base& rhs);
 	vec3_base operator*(const mat3_base& lhs, const vec3_base& rhs);

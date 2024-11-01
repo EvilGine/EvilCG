@@ -21,6 +21,13 @@ namespace ecg {
 	};
 
 	/// <summary>
+	/// Delete array_t that was allocated in library
+	/// </summary>
+	/// <param name="arr"></param>
+	/// <returns></returns>
+	ECG_API void delete_array(array_t* arr);
+
+	/// <summary>
 	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
 	/// The AABB is a box aligned with the coordinate axes that encloses the mesh, providing 
 	/// the minimum and maximum points in each axis direction.
@@ -88,19 +95,50 @@ namespace ecg {
 	/// </returns>
 	ECG_API float compute_surface_area(const mesh_t* mesh, ecg_status* status = nullptr);
 	
+	/// <summary>
+	/// A function for comparing two meshes with transformations
+	/// </summary>
+	/// <param name="m1">Pointer to the mesh data structure containing vertex and index arrays that define the mesh geometry.</param>
+	/// <param name="m2">Pointer to the mesh data structure containing vertex and index arrays that define the mesh geometry.</param>
+	/// <param name="status">Optional pointer to an ecg_status variable that will hold the status of the function execution,
+	/// indicating success or describing any errors encountered during computation (e.g., null pointer, empty or invalid mesh).</param>
+	/// <returns>
+	/// Return enum value that indicates result of comparison.
+	/// </returns>
+	ECG_API cmp_res compare_meshes(const mesh_t* m1, const mesh_t* m2, mat3_base* delta_transform = nullptr, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// Computes the covariance matrix for a given mesh, representing the variance and covariance 
+	/// of its vertex positions in 3D space. This matrix is essential for analyzing the distribution 
+	/// and orientation of the mesh, often used in tasks such as principal component analysis (PCA).
+	/// </summary>
+	/// <param name="mesh">
+	/// Pointer to the mesh data structure containing vertex and index arrays that define the mesh geometry.
+	/// The function requires that the mesh contains valid vertex data; otherwise, an error status is returned.
+	/// </param>
+	/// <param name="status">
+	/// Optional pointer to an <c>ecg_status</c> variable that stores the execution status of the function. 
+	/// If provided, it indicates success or describes any errors encountered (e.g., null pointer, empty or invalid mesh).
+	/// If <c>nullptr</c>, the function does not return status information.
+	/// </param>
+	/// <returns>
+	/// Returns a 3x3 covariance matrix (<c>mat3_base</c>) representing the spread of the mesh vertices 
+	/// in 3D space. This matrix is symmetric and describes the variance in each axis as well as the 
+	/// covariance between different axes.
+	/// </returns>
+	ECG_API mat3_base compute_covariance_matrix(const mesh_t* mesh, ecg_status* status = nullptr);
+
 	// [+] Should be added next
+	ECG_API bool is_mesh_closed(const mesh_t* mesh, ecg_status* status = nullptr);
+	ECG_API bool is_mesh_manifold(const mesh_t* mesh, ecg_status* status = nullptr);
 	ECG_API std::vector<vec3_base> find_nearest_vertices(const mesh_t* mesh, const vec3_base* point, int k, ecg_status* status = nullptr);
 
 	// [-] Not implemented
-	ECG_API cmp_res compare_meshes(const mesh_t* m1, const mesh_t* m2, ecg_status* status = nullptr);
 	ECG_API float compute_volume(const mesh_t* mesh, ecg_status* status = nullptr);
 
 	ECG_API mesh_t* smooth_mesh(const mesh_t* mesh, float lambda, int iterations, ecg_status* status = nullptr);
 	ECG_API mesh_t* simplify_mesh(const mesh_t* mesh, float reduction_factor, ecg_status* status = nullptr);
 	ECG_API std::vector<vec3_base> compute_vertex_normals(const mesh_t* mesh, ecg_status* status = nullptr);
-
-	ECG_API bool is_mesh_manifold(const mesh_t* mesh, ecg_status* status = nullptr);
-	ECG_API bool is_mesh_closed(const mesh_t* mesh, ecg_status* status = nullptr);
 }
 
 #endif
