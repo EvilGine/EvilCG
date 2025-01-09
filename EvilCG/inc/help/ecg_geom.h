@@ -6,8 +6,9 @@
 namespace ecg {
 	const float epsilon = 1e-5f;
 
+	template <class T>
 	struct array_t {
-		void* arr_ptr;
+		T* arr_ptr;
 		uint32_t arr_sz;
 
 		array_t() :

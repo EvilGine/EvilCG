@@ -17,13 +17,14 @@ find_package(GTest CONFIG REQUIRED)
 include_directories(../EvilCG/inc)
 include_directories(./inc)
 
-find_package(OpenCL CONFIG REQUIRED)
+find_package(OpenCL REQUIRED)
 include_directories(${OpenCL_INCLUDE_DIRS})
 
 # Source files
 set(SOURCE_FILES
 	./src/ecg_api_test.cpp
-    ./src/ecg_meshes.cpp
+	./src/ecg_meshes.cpp
+    ./src/ecg_timer.cpp
 	./src/ecg_main.cpp
 )
 

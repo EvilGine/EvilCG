@@ -12,6 +12,8 @@ TEST(ecg_api, init_ecg) {
 	auto context = host_ctrl.get_context();
 	auto device = host_ctrl.get_device();
 
+	std::cout << "Device Name: " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+
 	ASSERT_NE(device, cl::Device());
 	ASSERT_NE(context, cl::Context());
 	ASSERT_NE(queue, cl::CommandQueue());
@@ -24,7 +26,7 @@ TEST(ecg_api, summ_vertexes) {
 	uint32_t test_counter = 0;
 	ecg::ecg_status status;
 	ecg::mesh_t mesh;
-	timer_t timer;
+	custom_timer_t timer;
 
 	timer.start();
 	result_center = ecg::summ_vertexes(nullptr, &status);
@@ -33,7 +35,7 @@ TEST(ecg_api, summ_vertexes) {
 	ASSERT_TRUE(compare_result);
 	timer.end();
 
-	// std::cout << "[INF]:> #" << test_counter++ << " - " << timer << std::endl;
+	std::cout << "[INF]:> #" << test_counter++ << " - " << timer << std::endl;
 
 	timer.start();
 	result_center = ecg::summ_vertexes(&mesh, &status);
@@ -42,7 +44,7 @@ TEST(ecg_api, summ_vertexes) {
 	ASSERT_TRUE(compare_result);
 	timer.end();
 
-	// std::cout << "[INF]:> #" << test_counter++ << " - " << timer << std::endl;
+	std::cout << "[INF]:> #" << test_counter++ << " - " << timer << std::endl;
 
 	for (auto& item : meshes_inst.template_meshes) {
 		timer.start();
@@ -52,7 +54,7 @@ TEST(ecg_api, summ_vertexes) {
 		ASSERT_FALSE(compare_result); 
 		timer.end();
 
-		// std::cout << "[INF]:> #" << test_counter++ << " - " << timer << std::endl;
+		std::cout << "[INF]:> #" << test_counter++ << " - " << timer << std::endl;
 	}
 }
 
@@ -61,7 +63,7 @@ TEST(ecg_api, get_center) {
 	bool compare_result = false;
 	ecg::ecg_status status;
 	ecg::mesh_t mesh;
-	timer_t timer;
+	custom_timer_t timer;
 
 	timer.start();
 	result_center = ecg::get_center(nullptr, &status);
@@ -92,7 +94,7 @@ TEST(ecg_api, compute_aabb) {
 	ecg::bounding_box result_bb;
 	ecg::ecg_status status;
 	ecg::mesh_t mesh;
-	timer_t timer;
+	custom_timer_t timer;
 
 	timer.start();
 	result_bb = ecg::compute_aabb(nullptr, &status);
@@ -127,7 +129,7 @@ TEST(ecg_api, compute_obb) {
 	bool compare_result = false;
 	ecg::ecg_status status;
 	ecg::mesh_t mesh;
-	timer_t timer;
+	custom_timer_t timer;
 
 	timer.start();
 	result_bb = ecg::compute_obb(nullptr, &status);
@@ -162,7 +164,7 @@ TEST(ecg_api, compute_surface_area) {
 	bool compare_result = false;
 	ecg::ecg_status status;
 	ecg::mesh_t mesh;
-	timer_t timer;
+	custom_timer_t timer;
 
 	timer.start();
 	result_surf_area = ecg::compute_surface_area(nullptr, &status);
@@ -208,7 +210,7 @@ TEST(ecg_api, compute_covariance_matrix) {
 	ecg::mat3_base cov_matrix;
 	ecg::ecg_status status;
 	ecg::mesh_t mesh;
-	timer_t timer;
+	custom_timer_t timer;
 
 	timer.start();
 	cov_matrix = ecg::compute_covariance_matrix(nullptr, &status);

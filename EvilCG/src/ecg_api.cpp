@@ -8,7 +8,8 @@
 #include <help/ecg_geom.h>
 
 namespace ecg {
-	void delete_array(array_t* arr) {
+	template <class T>
+	void delete_array(array_t<T>* arr) {
 		if (arr != nullptr) {
 			delete[] arr->arr_ptr;
 			arr->arr_sz = 0;
@@ -60,18 +61,19 @@ namespace ecg {
 			auto internal_summ = [&](const vec3_base* data, cl_int data_size) {
 				const float temp_groups = static_cast<float>(data_size) / work_group_sz;
 				const size_t work_groups = std::ceil(temp_groups);
-				
+								
 				const size_t res_buffer_sz = temp_groups > 1.0f ? work_groups * sizeof(data[0]) : sizeof(vec3_base);
 				const size_t buffer_sz = sizeof(data[0]) * data_size;
 				const size_t full_sz = work_groups * work_group_sz;
 				std::vector<vec3_base> result;
 				result.resize(work_groups);
 
-				cl::Buffer res_buffer = cl::Buffer(context, CL_MEM_WRITE_ONLY, res_buffer_sz);
-				cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, buffer_sz);
-				cl::Buffer acc_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, full_sz * sizeof(mesh->vertexes[0]));
+				cl_int err_create_buffer = CL_SUCCESS;
+				cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, buffer_sz, nullptr, &err_create_buffer); op_res = err_create_buffer;
+				cl::Buffer res_buffer = cl::Buffer(context, CL_MEM_WRITE_ONLY, res_buffer_sz, nullptr, &err_create_buffer); op_res = err_create_buffer;
+				cl::Buffer acc_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, full_sz * sizeof(mesh->vertexes[0]), nullptr, &err_create_buffer); op_res = err_create_buffer;
 
-				cl_int vert_sz = sizeof(vec3_base) / sizeof(float);
+				constexpr cl_int vert_sz = sizeof(vec3_base) / sizeof(float);
 				cl::NDRange local = work_group_sz;
 				cl::NDRange global = full_sz;
 
@@ -174,7 +176,7 @@ namespace ecg {
 			mat3_base cov_mat = null_mat3;
 			vec3_base center = get_center(mesh, status);
 			cl_float4 center_cl = { center.x, center.y, center.z, 0.0f };
-			const cl_int vertex_size = sizeof(vec3_base) / sizeof(float);
+			constexpr cl_int vertex_size = sizeof(vec3_base) / sizeof(float);
 
 			cl_int vertex_buffer_size = mesh->vertexes_size * sizeof(mesh->vertexes[0]);
 			cl::Buffer cov_mat_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(cov_mat));

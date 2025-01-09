@@ -25,7 +25,8 @@ namespace ecg {
 	/// </summary>
 	/// <param name="arr"></param>
 	/// <returns></returns>
-	ECG_API void delete_array(array_t* arr);
+	template <class T>
+	ECG_API void delete_array(array_t<T>* arr);
 
 	/// <summary>
 	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 

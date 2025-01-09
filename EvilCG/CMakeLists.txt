@@ -14,9 +14,9 @@ project (
 set(CMAKE_CXX_STANDARD 20)
 
 # External libraries
-find_package(glm CONFIG REQUIRED)
-find_package(OpenCL CONFIG REQUIRED)
-find_package(Eigen3 CONFIG REQUIRED)
+find_package(glm REQUIRED)
+find_package(OpenCL REQUIRED)
+find_package(Eigen3 REQUIRED)
 include_directories(${OpenCL_INCLUDE_DIRS})
 
 # Include directories

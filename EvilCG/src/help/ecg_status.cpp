@@ -5,12 +5,14 @@ namespace ecg {
 		m_status = rhs.m_status;
 		if (m_status != status_code::SUCCESS)
 			throw ecg_status_ex(m_status);
+		return *this;
 	}
 
 	ecg_status_handler& ecg_status_handler::operator=(const ecg_status& rhs) {
 		m_status = rhs;
 		if(m_status != status_code::SUCCESS)
-			throw ecg_status_ex(m_status);
+		 	throw ecg_status_ex(m_status);
+		return *this;
 	}
 
 	bool ecg_status_handler::operator==(const status_code& code) {

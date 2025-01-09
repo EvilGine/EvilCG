@@ -70,14 +70,13 @@ namespace ecg {
 			platform.getDevices(CL_DEVICE_TYPE_ALL, &item);
 		}
 
-		std::pair<size_t, cl::Device> score_with_device = { 0, cl::Device() };
+		size_t dev_counter = 0;
+		std::pair<size_t, cl::Device> score_with_device = { INT_MAX, cl::Device() };
 		for (auto& item : devices_of_platform) {
 			for (cl::Device& dev : item.second) {
-				size_t units = dev.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
-				size_t freq = dev.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>();
-				size_t score = units * freq;
+				size_t score = get_device_score(dev);
 
-				if (score_with_device.first <= score) {
+				if (score_with_device.first >= score) {
 					score_with_device.first = score;
 					score_with_device.second = dev;
 				}

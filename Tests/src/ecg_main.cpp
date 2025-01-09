@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+
 #include <ecg_meshes.h>
+#include <ecg_timer.h>
 
 int main(int argc, char** argv)
 {
