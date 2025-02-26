@@ -54,7 +54,7 @@ namespace ecg {
 		ecg_status get_status() { return m_status_code; }
 
 	private:
-		ecg_status m_status_code;
+		ecg_status  m_status_code;
 		std::string m_message;
 
 	};

@@ -55,23 +55,37 @@ namespace ecg {
 		float m22;
 	};
 
+	/// <summary>
+	/// Represents the Singular Value Decomposition (SVD) of a matrix.
+	/// It consists of three components: 
+	/// - u: Left orthogonal matrix.
+	/// - sigma: Diagonal matrix of singular values, stored as a vector.
+	/// - v: Right orthogonal matrix.
+	/// </summary>
 	struct svd_t {
 		mat3_base u;
 		vec3_base sigma;
 		mat3_base v;
 	};
 
+	/// <summary>
+	/// A simple representation of an axis-aligned bounding box (AABB).
+	/// Defined by the minimum and maximum coordinates in 3D space.
+	/// </summary>
 	struct bounding_box {
 		vec3_base min;
 		vec3_base max;
 	};
 
+	/// <summary>
+	/// A full representation of a bounding box in 3D space.
+	/// Defined by its eight corner points.
+	/// </summary>
 	struct full_bounding_box {
 		vec3_base p0;
 		vec3_base p1;
 		vec3_base p2;
 		vec3_base p3;
-
 		vec3_base p4;
 		vec3_base p5;
 		vec3_base p6;

@@ -549,6 +549,20 @@ namespace ecg {
 				if(lid == 0) atomic_add_f(surface_area, local_surf_area);
 			}
 		);
+
+	const std::string is_mesh_closed_name = "is_mesh_closed";
+	const std::string is_mesh_closed_code =
+		enable_atomics_def +
+		NAME_OF(
+			__kernel void is_mesh_closed(
+				__global float* vertexes, int vertexes_size,
+				__global float* indexes, int indexes_size,
+				int vert_size, __global bool* result
+			) {
+				int gid = get_global_id(0);
+				*result = false;
+			}
+		);
 }
 
 #endif

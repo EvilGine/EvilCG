@@ -432,4 +432,57 @@ namespace ecg {
 
 		return cov_mat;
 	}
+
+	bool is_mesh_closed(const mesh_t* mesh, ecg_status* status) {
+		ecg_status_handler op_res;
+		bool result = false;
+
+		try {
+			if (status != nullptr) *status = status_code::SUCCESS;
+			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
+			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
+			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			cl::Buffer result_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
+
+			cl_int vertex_buffer_size = mesh->vertexes_size * sizeof(mesh->vertexes[0]);
+			cl::Buffer vertex_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_buffer_size);
+		
+			cl_int indexes_buffer_size = mesh->indexes_size * sizeof(mesh->indexes[0]);
+			cl::Buffer indexes_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, indexes_buffer_size);
+
+			cl::Program::Sources sources = { is_mesh_closed_code };
+			ecg_program is_mesh_close_program(context, dev, sources);
+			
+			op_res = queue.enqueueWriteBuffer(vertex_buffer, CL_FALSE, 0, vertex_buffer_size, mesh->vertexes);
+			op_res = queue.enqueueWriteBuffer(indexes_buffer, CL_FALSE, 0, indexes_buffer_size, mesh->indexes);
+			queue.finish();
+
+			cl::NDRange global = cl::NDRange(mesh->indexes_size);
+			cl::NDRange local = cl::NullRange;
+
+			is_mesh_close_program.execute(
+				queue, is_mesh_closed_name, global, local,
+				vertex_buffer, vertex_buffer_size, 
+				indexes_buffer, indexes_buffer_size,
+				result_buffer
+			);
+
+			queue.enqueueReadBuffer(result_buffer, CL_FALSE, 0, sizeof(bool), &result);
+			queue.finish();
+		}
+		catch (...) {
+			if (op_res == status_code::SUCCESS)
+				op_res = status_code::UNKNOWN_EXCEPTION;
+			if (status != nullptr)
+				*status = op_res.get_status();
+		}
+
+		return result;
+	}
 }

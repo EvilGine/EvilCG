@@ -12,13 +12,20 @@ project (
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_compile_definitions(GTEST_BUILD)
-find_package(GTest CONFIG REQUIRED)
+# My include directories
 include_directories(../EvilCG/inc)
 include_directories(./inc)
 
+# Add GTest
+add_compile_definitions(GTEST_BUILD)
+find_package(GTest CONFIG REQUIRED)
+
+# Find OpenCL
 find_package(OpenCL REQUIRED)
 include_directories(${OpenCL_INCLUDE_DIRS})
+
+# Find spdlog
+find_package(spdlog REQUIRED)
 
 # Source files
 set(SOURCE_FILES
@@ -32,7 +39,9 @@ enable_testing()
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PRIVATE EvilCG)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenCL::OpenCL)
+target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
 target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+
 
 # Copy EvilCG.dll or EvilCG.so after build
 if (WIN32)

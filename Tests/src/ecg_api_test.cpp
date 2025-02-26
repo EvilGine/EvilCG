@@ -236,3 +236,24 @@ TEST(ecg_api, compute_covariance_matrix) {
 		timer.end();
 	}
 }
+
+TEST(ecg_api, is_mesh_closed) {
+	ecg::ecg_status status;
+	custom_timer_t timer;
+	bool result = false;
+	ecg::mesh_t mesh;
+
+	timer.start();
+	result = ecg::is_mesh_closed(nullptr, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	result = ecg::is_mesh_closed(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
+	ASSERT_FALSE(result);
+}
