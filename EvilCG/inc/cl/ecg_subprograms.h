@@ -5,6 +5,29 @@
 namespace ecg {
 	#define NAME_OF(VAR) "\n"#VAR
 
+	/// <summary>
+	/// Namespace with structures for OpenCL kernel codes
+	/// </summary>
+	namespace cl_structs {
+		const std::string face_struct =
+			NAME_OF(
+				struct face_t {
+					\n
+						int id0; \n
+						int id1; \n
+						int id2; \n
+				}; \n
+			);
+
+		const std::string edge_struct =
+			NAME_OF(
+				struct edge_t { \n
+					int id0; \n
+					int id1; \n
+				}; \n
+			);
+	}
+
 	const std::string enable_atomics_def = "\n#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n";
 
 	const std::string mul_mat_vec =
@@ -192,6 +215,17 @@ namespace ecg {
 					vertexes[id * vert_size + 2] \n
 				); \n
 			} \n
+		);
+
+	const std::string get_face =
+		NAME_OF(
+			struct face_t get_face(__global int* indexes, int id) {
+				struct face_t result;
+				result.id0 = indexes[id * 3 + 0];
+				result.id1 = indexes[id * 3 + 1];
+				result.id2 = indexes[id * 3 + 2];
+				return  result;
+			}
 		);
 
 	const std::string cross_product =
@@ -553,14 +587,44 @@ namespace ecg {
 	const std::string is_mesh_closed_name = "is_mesh_closed";
 	const std::string is_mesh_closed_code =
 		enable_atomics_def +
+		cl_structs::face_struct +
+		cl_structs::edge_struct +
+		get_face +
 		NAME_OF(
 			__kernel void is_mesh_closed(
-				__global float* vertexes, int vertexes_size,
-				__global float* indexes, int indexes_size,
-				int vert_size, __global bool* result
+				__global int* indexes, int indexes_cnt,
+				__global bool* result
 			) {
 				int gid = get_global_id(0);
-				*result = false;
+				if (gid > indexes_cnt) return;
+
+				struct edge_t current_edge;
+				int edges_includes = 0;
+
+				if (gid % 3 == 0 || gid % 3 == 1) {
+					current_edge.id0 = indexes[gid]; 
+					current_edge.id1 = indexes[gid + 1];
+				}
+				else if (gid % 3 == 2) {
+					current_edge.id0 = indexes[gid];
+					current_edge.id1 = indexes[gid - 2];
+				}
+
+				for (int face_id = 0; face_id < indexes_cnt / 3; ++face_id) {
+					if (*result == false) break;
+					int is_face_contains_edge = 0;
+					struct face_t face = get_face(indexes, face_id);
+
+					if (face.id0 == current_edge.id0 || face.id1 == current_edge.id0 || face.id2 == current_edge.id0)
+						++is_face_contains_edge;
+					if (face.id0 == current_edge.id1 || face.id1 == current_edge.id1 || face.id2 == current_edge.id1)
+						++is_face_contains_edge;
+					if (is_face_contains_edge == 2)
+						++edges_includes;
+				}
+
+				if (edges_includes != 2)
+					*result = false;
 			}
 		);
 }
