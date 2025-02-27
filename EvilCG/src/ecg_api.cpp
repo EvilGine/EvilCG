@@ -480,4 +480,31 @@ namespace ecg {
 
 		return result;
 	}
+
+	bool is_mesh_manifold(const mesh_t* mesh, ecg_status* status) {
+		ecg_status_handler op_res;
+		bool result = false;
+
+		try {
+			if (status != nullptr) *status = status_code::SUCCESS;
+			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
+			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
+			if (mesh->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
+			
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+
+		}
+		catch (...) {
+			if (op_res == status_code::SUCCESS)
+				op_res = status_code::UNKNOWN_EXCEPTION;
+			if (status != nullptr)
+				*status = op_res.get_status();
+		}
+
+		return result;
+	}
 }
