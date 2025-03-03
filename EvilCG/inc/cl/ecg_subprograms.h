@@ -13,21 +13,22 @@ namespace ecg {
 			NAME_OF(
 				struct face_t {
 					\n
-						int id0; \n
-						int id1; \n
-						int id2; \n
+						uint32_t id0; \n
+						uint32_t id1; \n
+						uint32_t id2; \n
 				}; \n
 			);
 
 		const std::string edge_struct =
 			NAME_OF(
 				struct edge_t { \n
-					int id0; \n
-					int id1; \n
+					uint32_t id0; \n
+					uint32_t id1; \n
 				}; \n
 			);
 	}
 
+	const std::string typedef_uint32_t = "\ntypedef unsigned int uint32_t;\n";
 	const std::string enable_atomics_def = "\n#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n";
 
 	const std::string mul_mat_vec =
@@ -586,16 +587,17 @@ namespace ecg {
 
 	const std::string is_mesh_closed_name = "is_mesh_closed";
 	const std::string is_mesh_closed_code =
+		typedef_uint32_t +
 		enable_atomics_def +
 		cl_structs::face_struct +
 		cl_structs::edge_struct +
 		get_face +
 		NAME_OF(
 			__kernel void is_mesh_closed(
-				__global int* indexes, int indexes_cnt,
+				__global uint32_t* indexes, uint32_t indexes_cnt,
 				__global bool* result
 			) {
-				int gid = get_global_id(0);
+				uint32_t gid = get_global_id(0);
 				if (gid > indexes_cnt) return;
 
 				struct edge_t current_edge;
@@ -610,7 +612,7 @@ namespace ecg {
 					current_edge.id1 = indexes[gid - 2];
 				}
 
-				for (int face_id = 0; face_id < indexes_cnt / 3; ++face_id) {
+				for (uint32_t face_id = 0; face_id < indexes_cnt / 3; ++face_id) {
 					if (*result == false) break;
 					int is_face_contains_edge = 0;
 					struct face_t face = get_face(indexes, face_id);
@@ -625,6 +627,24 @@ namespace ecg {
 
 				if (edges_includes != 2)
 					*result = false;
+			}
+		);
+
+	const std::string is_mesh_vertexes_manifold_name = "is_mesh_manifold";
+	const std::string is_mesh_vertexes_manifold_code =
+		typedef_uint32_t +
+		cl_structs::face_struct +
+		cl_structs::edge_struct +
+		get_face +
+		NAME_OF(
+			__kernel void is_mesh_vertexes_manifold(
+				__global uint32_t* indexes, uint32_t indexes_cnt,
+				__global bool* result
+			) {
+				uint32_t curr_vrt_id = get_global_id(0);
+				if (curr_vrt_id > indexes_cnt) return;
+
+
 			}
 		);
 }

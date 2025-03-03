@@ -276,3 +276,51 @@ TEST(ecg_api, is_mesh_closed) {
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);
 	ASSERT_FALSE(result);
 }
+
+TEST(ecg_api, is_mesh_manifold) {
+	ecg::ecg_status status;
+	custom_timer_t timer;
+	bool result = false;
+	ecg::mesh_t mesh;
+
+	timer.start();
+	result = ecg::is_mesh_closed(nullptr, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	ASSERT_TRUE(result);
+
+	timer.start();
+	result = ecg::is_mesh_closed(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
+	ASSERT_TRUE(result);
+
+	timer.start();
+	mesh.indexes_size = 4;
+	mesh.indexes = (uint32_t*)(1);
+	result = ecg::is_mesh_closed(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::NOT_TRIANGULATED_MESH);
+	ASSERT_TRUE(result);
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	ecg::mesh_t closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
+	ecg::mesh_t not_closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
+
+	timer.start();
+	result = ecg::is_mesh_closed(&closed_mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_TRUE(result);
+
+	timer.start();
+	result = ecg::is_mesh_closed(&not_closed_mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
+}
