@@ -12,8 +12,8 @@ typedef std::shared_ptr<ecg_test_mesh> ecg_test_mesh_ptr;
 class ecg_meshes {
 public:
 	std::map<std::string, ecg_test_mesh_ptr> loaded_meshes_by_name;
+	std::vector<ecg_test_mesh_ptr> template_meshes;
 	std::vector<ecg_test_mesh_ptr> loaded_meshes;
-	std::vector<ecg_test_mesh> template_meshes;
 
 	static ecg_meshes& get_instance();
 	void load_meshes(std::string path_to_meshes = "");

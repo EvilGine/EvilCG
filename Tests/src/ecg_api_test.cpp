@@ -21,16 +21,18 @@ TEST(ecg_api, init_ecg) {
 
 TEST(ecg_api, summ_vertexes) {
 	auto& meshes_inst = ecg_meshes::get_instance();
-	ecg::vec3_base result_center;
 	bool compare_result = false;
 	uint32_t test_counter = 0;
 	ecg::ecg_status status;
-	ecg::mesh_t mesh;
 	custom_timer_t timer;
+	ecg::mesh_t mesh;
+	
+	ecg::vec3_base gpu_result;
+	ecg::vec3_base cpu_result;
 
 	timer.start();
-	result_center = ecg::summ_vertexes(nullptr, &status);
-	compare_result = ecg::compare_vec3_base(result_center, ecg::vec3_base());
+	gpu_result = ecg::summ_vertexes(nullptr, &status);
+	compare_result = ecg::compare_vec3_base(gpu_result, ecg::vec3_base());
 	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
 	ASSERT_TRUE(compare_result);
 	timer.end();
@@ -38,24 +40,45 @@ TEST(ecg_api, summ_vertexes) {
 	std::cout << "[INF]:> #" << test_counter++ << " - " << timer << std::endl;
 
 	timer.start();
-	result_center = ecg::summ_vertexes(&mesh, &status);
-	compare_result = ecg::compare_vec3_base(result_center, ecg::vec3_base());
+	gpu_result = ecg::summ_vertexes(&mesh, &status);
+	compare_result = ecg::compare_vec3_base(gpu_result, ecg::vec3_base());
 	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
 	ASSERT_TRUE(compare_result);
 	timer.end();
 
 	std::cout << "[INF]:> #" << test_counter++ << " - " << timer << std::endl;
 
-	for (auto& item : meshes_inst.template_meshes) {
-		timer.start();
-		result_center = ecg::summ_vertexes(&item.mesh, &status);
-		compare_result = ecg::compare_vec3_base(result_center, ecg::vec3_base());
-		ASSERT_EQ(status, ecg::status_code::SUCCESS);
-		ASSERT_FALSE(compare_result); 
-		timer.end();
+	auto cpu_check = [](ecg::vec3_base* vertexes, uint32_t vertexes_size) {
+		ecg::vec3_base result;
+		for (size_t i = 0; i < vertexes_size; ++i) {
+			result = ecg::add_vec(result, vertexes[i]);
+		}
+		return result;
+	};
 
-		std::cout << "[INF]:> #" << test_counter++ << " - " << timer << std::endl;
-	}
+	auto check_func = [&](std::vector<ecg_test_mesh_ptr>& meshes) {
+		constexpr size_t vec_size = sizeof(ecg::vec3_base) / sizeof(float);
+		for (auto& item : meshes) {
+			timer.start();
+			gpu_result = ecg::summ_vertexes(&item->mesh, &status);
+			cpu_result = cpu_check(item->mesh.vertexes, item->mesh.vertexes_size);
+			compare_result = ecg::compare_vec3_base(gpu_result, cpu_result);
+			timer.end();
+
+#ifdef _DEBUG
+			std::cout << "[INF]:> #" << test_counter++ << " - " << timer << "\n"
+				<< "\tMesh name: " << item->full_path << "\n"
+				<< "\tMesh vertexes cnt: " << item->mesh.vertexes_size << std::endl;
+			std::cout << "Compare result: " << compare_result 
+				<< "\n\tgpu: {" << gpu_result.x << " , " << gpu_result.y << " , " << gpu_result.z << " }" 
+				<< "\n\tcpu: {" << cpu_result.x << " , " << cpu_result.y << " , " << cpu_result.z << " }" 
+				<< std::endl;
+#endif
+		}
+	};
+
+	check_func(meshes_inst.template_meshes);
+	check_func(meshes_inst.loaded_meshes);
 }
 
 TEST(ecg_api, get_center) {
@@ -309,6 +332,7 @@ TEST(ecg_api, is_mesh_manifold) {
 	auto& mesh_inst = ecg_meshes::get_instance();
 	ecg::mesh_t closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
 	ecg::mesh_t not_closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
+	ecg::mesh_t sandglass_non_manifold = mesh_inst.loaded_meshes_by_name["sandglass-non-manifold.obj"]->mesh;
 
 	timer.start();
 	result = ecg::is_mesh_closed(&closed_mesh, &status);
@@ -319,6 +343,13 @@ TEST(ecg_api, is_mesh_manifold) {
 
 	timer.start();
 	result = ecg::is_mesh_closed(&not_closed_mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	result = ecg::is_mesh_closed(&sandglass_non_manifold, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);

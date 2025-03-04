@@ -24,10 +24,8 @@ namespace ecg {
 			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
 			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
 
-			vec3_base acc;
-			//for (uint32_t id = 0; id < mesh->vertexes_size; ++id)
-			//	acc += mesh->vertexes[id];
-			acc = summ_vertexes(mesh, status);
+			vec3_base acc = summ_vertexes(mesh, status); 
+			if (status != nullptr) op_res = *status;
 			return acc / mesh->vertexes_size;
 		}
 		catch (...) {
@@ -54,42 +52,44 @@ namespace ecg {
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
 
-			const size_t work_group_sz = ctrl.get_max_work_group_size();
+			const size_t max_work_group_size = ctrl.get_max_work_group_size();
 			cl::Program::Sources sources = { summ_vertexes_code };
 			ecg_program program(context, dev, sources);
 
 			auto internal_summ = [&](const vec3_base* data, cl_int data_size) {
-				const float temp_groups = static_cast<float>(data_size) / work_group_sz;
+				const float temp_groups = static_cast<float>(data_size) / max_work_group_size;
 				const size_t work_groups = std::ceil(temp_groups);
-								
-				const size_t res_buffer_sz = temp_groups > 1.0f ? work_groups * sizeof(data[0]) : sizeof(vec3_base);
-				const size_t buffer_sz = sizeof(data[0]) * data_size;
-				const size_t full_sz = work_groups * work_group_sz;
+
+				constexpr cl_int vert_sz = sizeof(vec3_base) / sizeof(float);
+				constexpr size_t item_sz = sizeof(data[0]);
+
+				const size_t accumulator_buffer_size = work_groups * max_work_group_size * item_sz;
+				const size_t vertexes_buffer_size = data_size * item_sz;
+				const size_t result_buffer_size = work_groups * item_sz;
 				std::vector<vec3_base> result;
 				result.resize(work_groups);
 
 				cl_int err_create_buffer = CL_SUCCESS;
-				cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, buffer_sz, nullptr, &err_create_buffer); op_res = err_create_buffer;
-				cl::Buffer res_buffer = cl::Buffer(context, CL_MEM_WRITE_ONLY, res_buffer_sz, nullptr, &err_create_buffer); op_res = err_create_buffer;
-				cl::Buffer acc_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, full_sz * sizeof(mesh->vertexes[0]), nullptr, &err_create_buffer); op_res = err_create_buffer;
+				cl::Buffer acc_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, accumulator_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+				cl::Buffer vert_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+				cl::Buffer res_buffer = cl::Buffer(context, CL_MEM_WRITE_ONLY, result_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
 
-				constexpr cl_int vert_sz = sizeof(vec3_base) / sizeof(float);
-				cl::NDRange local = work_group_sz;
-				cl::NDRange global = full_sz;
+				cl::NDRange local = max_work_group_size;
+				cl::NDRange global = work_groups * max_work_group_size;
 
-				op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, buffer_sz, data);
-				op_res = queue.enqueueFillBuffer(res_buffer, (cl_int(0)), 0, res_buffer_sz);
-				op_res = queue.enqueueFillBuffer(acc_buffer, (cl_int(0)), 0, full_sz);
+				op_res = queue.enqueueFillBuffer(res_buffer, (cl_int(0)), 0, result_buffer_size);
+				op_res = queue.enqueueFillBuffer(acc_buffer, (cl_int(0)), 0, accumulator_buffer_size);
+				op_res = queue.enqueueWriteBuffer(vert_buffer, CL_FALSE, 0, vertexes_buffer_size, data);
 				op_res = queue.finish();
 
 				op_res = program.execute(
 					queue, summ_vertexes_name, global, local, 
 					data_size, vert_sz,
-					vertexes_buffer, acc_buffer,
+					vert_buffer, acc_buffer,
 					res_buffer
 				);
 
-				op_res = queue.enqueueReadBuffer(res_buffer, CL_FALSE, 0, res_buffer_sz, result.data());
+				op_res = queue.enqueueReadBuffer(res_buffer, CL_FALSE, 0, result_buffer_size, result.data());
 				queue.finish();
 				return result;
 			};
@@ -97,7 +97,7 @@ namespace ecg {
 			std::vector<vec3_base> acc_vector;
 			acc_vector = internal_summ(mesh->vertexes, mesh->vertexes_size);
 			while (acc_vector.size() > 1) {
-				acc_vector = internal_summ(acc_vector.data(), acc_vector.size());
+				acc_vector = std::move(internal_summ(acc_vector.data(), acc_vector.size()));
 			}
 			result = acc_vector[0];
 		}

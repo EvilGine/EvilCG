@@ -4,8 +4,8 @@ namespace ecg {
 	std::ostream& operator<<(std::ostream& os, const vec3_base& rhs) {
 		std::stringstream ss;
 		ss << "{ " << rhs.x;
-		ss << "; " << rhs.x;
-		ss << "; " << rhs.x;
+		ss << "; " << rhs.y;
+		ss << "; " << rhs.z;
 		ss << " }" << std::endl;
 		os << ss.str();
 		return os;

@@ -118,7 +118,7 @@ void ecg_meshes::load_meshes(std::string path_to_meshes) {
 
 ecg_meshes::~ecg_meshes() {
     for (auto& item : template_meshes) {
-        delete_mesh(&item.mesh);
+        delete_mesh(&item->mesh);
     }
 
     for (auto& item : loaded_meshes) {
@@ -219,8 +219,9 @@ void ecg_meshes::internal_init() {
     size_t init_size = 13;
 
     for (auto& item : template_meshes) {
-        item.full_path = "mesh_" + std::to_string(init_size);
-        init_mesh(&item.mesh, init_size);
+        item = ecg_test_mesh_ptr(new ecg_test_mesh());
+        item->full_path = "mesh_" + std::to_string(init_size);
+        init_mesh(&item->mesh, init_size);
         init_size += increment;
     }
 }

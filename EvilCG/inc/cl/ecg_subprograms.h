@@ -389,6 +389,8 @@ namespace ecg {
 				const int gid = get_global_id(0);
 				const int lid = get_local_id(0);
 
+				if (gid >= vert_arr_len) return;
+
 				const int offset = group_id * group_size;
 				float3 v1 = gid * 2 < vert_arr_len ? get_vertex(gid * 2, vertexes, vert_size) : (float3)(0);
 				float3 v2 = gid * 2 + 1 < vert_arr_len ? get_vertex(gid * 2 + 1, vertexes, vert_size) : (float3)(0);

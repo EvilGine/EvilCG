@@ -1,0 +1,41 @@
+# Hourglass-like model with a non-manifold central vertex
+
+o Hourglass
+
+v  0.0  1.0  0.0  # Top vertex
+v -1.0  0.5 -1.0  # Top base vertex 1
+v  1.0  0.5 -1.0  # Top base vertex 2
+v  1.0  0.5  1.0  # Top base vertex 3
+v -1.0  0.5  1.0  # Top base vertex 4
+
+v  0.0 -1.0  0.0  # Bottom vertex
+v -1.0 -0.5 -1.0  # Bottom base vertex 1
+v  1.0 -0.5 -1.0  # Bottom base vertex 2
+v  1.0 -0.5  1.0  # Bottom base vertex 3
+v -1.0 -0.5  1.0  # Bottom base vertex 4
+
+v  0.0  0.0  0.0  # Central vertex (non-manifold)
+
+# Faces forming the top pyramid
+f 1 2 3
+f 1 3 4
+f 1 4 5
+f 1 5 2
+
+# Faces forming the bottom pyramid
+f 6 7 8
+f 6 8 9
+f 6 9 10
+f 6 10 7
+
+# Faces connecting the top part to the center
+f 2 11 3
+f 3 11 4
+f 4 11 5
+f 5 11 2
+
+# Faces connecting the bottom part to the center
+f 7 11 8
+f 8 11 9
+f 9 11 10
+f 10 11 7

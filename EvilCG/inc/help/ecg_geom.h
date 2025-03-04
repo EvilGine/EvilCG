@@ -113,7 +113,7 @@ namespace ecg {
 	vec3_base operator+(const vec3_base& lhs, const vec3_base& rhs);
 	vec3_base operator-(const vec3_base& lhs, const vec3_base& rhs);
 	vec3_base operator/(const vec3_base& lhs, const float rhs);
-
+	
 	void operator+=(vec3_base& lhs, const vec3_base& rhs);
 	void operator+=(vec3_base& lhs, float rhs);
 
