@@ -152,8 +152,16 @@ namespace ecg {
 	/// <returns></returns>
 	ECG_API bool is_mesh_manifold(const mesh_t* mesh, ecg_status* status = nullptr);
 
-	// [+] Should be added next
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="mesh"></param>
+	/// <param name="base_num_vert"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
 	ECG_API void triangulate_mesh(mesh_t* mesh, int base_num_vert, ecg_status* status = nullptr);
+	
+	// [+] Should be added next
 	ECG_API std::vector<vec3_base> find_nearest_vertices(const mesh_t* mesh, const vec3_base* point, int k, ecg_status* status = nullptr);
 
 	// [-] Not implemented
