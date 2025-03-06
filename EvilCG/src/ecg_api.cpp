@@ -510,9 +510,9 @@ namespace ecg {
 			cl::Buffer is_closed_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 			cl::Buffer all_vertexes_manifold_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 
-			op_res = queue.enqueueWriteBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &result);
+			op_res = queue.enqueueWriteBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
 			op_res = queue.enqueueWriteBuffer(ind_buffer, CL_FALSE, 0, ind_buffer_size, mesh->indexes);
-			op_res = queue.enqueueWriteBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &result);
+			op_res = queue.enqueueWriteBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_closed);
 			queue.finish();
 
 			cl::NDRange global = cl::NDRange(mesh->indexes_size);
@@ -524,11 +524,11 @@ namespace ecg {
 				is_closed_buffer
 			);
 
-			is_mesh_vertexes_manifold_prog.execute(
-				queue, is_mesh_vertexes_manifold_name, global, local,
-				ind_buffer, ind_buffer_size,
-				all_vertexes_manifold_buffer
-			);
+			//is_mesh_vertexes_manifold_prog.execute(
+			//	queue, is_mesh_vertexes_manifold_name, global, local,
+			//	ind_buffer, ind_buffer_size,
+			//	all_vertexes_manifold_buffer
+			//);
 
 			queue.enqueueReadBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
 			queue.enqueueReadBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_closed);

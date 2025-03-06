@@ -640,13 +640,94 @@ namespace ecg {
 		get_face +
 		NAME_OF(
 			__kernel void is_mesh_vertexes_manifold(
-				__global uint32_t* indexes, uint32_t indexes_cnt,
+				__global uint32_t * indexes, uint32_t indexes_cnt,
 				__global bool* result
 			) {
-				uint32_t curr_vrt_id = get_global_id(0);
-				if (curr_vrt_id > indexes_cnt) return;
+				uint32_t faces_cnt = indexes_cnt / 3;
+				uint32_t curr_ind = get_global_id(0);
+				if (curr_ind >= indexes_cnt) return;
 
+				struct edge_t current_edge = { 0, 0 };
+				struct edge_t origin_edge = { 0, 0 };
+				struct edge_t prev_edge = { 0, 0 };
 
+				// Определение начального ребра
+				if (curr_ind % 3 == 0 || curr_ind % 3 == 1) {
+					origin_edge.id0 = indexes[curr_ind];
+					origin_edge.id1 = indexes[curr_ind + 1];
+				}
+				else if (curr_ind % 3 == 2) {
+					origin_edge.id0 = indexes[curr_ind];
+					origin_edge.id1 = indexes[curr_ind - 2];
+				}
+
+				current_edge = origin_edge;
+
+				while (true) {
+					if (*result == false) return;
+
+					struct edge_t new_edge = { 0, 0 };
+					struct face_t temp_face = { 0, 0, 0 };
+					bool edge_found = false;
+
+					for (uint32_t face_id = 0; face_id < faces_cnt; ++face_id) {
+						temp_face = get_face(indexes, face_id);
+
+						bool contains_edge =
+							(current_edge.id0 == temp_face.id0 && current_edge.id1 == temp_face.id1) ||
+							(current_edge.id0 == temp_face.id1 && current_edge.id1 == temp_face.id2) ||
+							(current_edge.id0 == temp_face.id2 && current_edge.id1 == temp_face.id0) ||
+							(current_edge.id1 == temp_face.id0 && current_edge.id0 == temp_face.id1) ||
+							(current_edge.id1 == temp_face.id1 && current_edge.id0 == temp_face.id2) ||
+							(current_edge.id1 == temp_face.id2 && current_edge.id0 == temp_face.id0);
+
+						if (contains_edge) {
+							edge_found = true;
+
+							if (current_edge.id0 == temp_face.id0 && current_edge.id1 == temp_face.id1) {
+								new_edge = (prev_edge.id0 == temp_face.id1 && prev_edge.id1 == temp_face.id2) ?
+								(struct edge_t) {
+									temp_face.id2, temp_face.id0
+								} :
+								(struct edge_t) {
+									temp_face.id1, temp_face.id2
+								};
+							}
+							else if (current_edge.id0 == temp_face.id1 && current_edge.id1 == temp_face.id2) {
+								new_edge = (prev_edge.id0 == temp_face.id2 && prev_edge.id1 == temp_face.id0) ?
+								(struct edge_t) {
+									temp_face.id0, temp_face.id1
+								} :
+								(struct edge_t) {
+									temp_face.id2, temp_face.id0
+								};
+							}
+							else if (current_edge.id0 == temp_face.id2 && current_edge.id1 == temp_face.id0) {
+								new_edge = (prev_edge.id0 == temp_face.id0 && prev_edge.id1 == temp_face.id1) ?
+								(struct edge_t) {
+									temp_face.id1, temp_face.id2
+								} :
+								(struct edge_t) {
+									temp_face.id0, temp_face.id1
+								};
+							}
+
+							break;
+						}
+					}
+
+					if (!edge_found) {
+						*result = false;
+						return;
+					}
+
+					prev_edge = current_edge;
+					current_edge = new_edge;
+
+					if (current_edge.id0 == origin_edge.id0 && current_edge.id1 == origin_edge.id1) {
+						return;
+					}
+				}
 			}
 		);
 }
