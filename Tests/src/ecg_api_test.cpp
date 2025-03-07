@@ -307,27 +307,27 @@ TEST(ecg_api, is_mesh_manifold) {
 	ecg::mesh_t mesh;
 
 	timer.start();
-	result = ecg::is_mesh_closed(nullptr, &status);
+	result = ecg::is_mesh_manifold(nullptr, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
-	ASSERT_TRUE(result);
+	ASSERT_FALSE(result);
 
 	timer.start();
-	result = ecg::is_mesh_closed(&mesh, &status);
+	result = ecg::is_mesh_manifold(&mesh, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
-	ASSERT_TRUE(result);
+	ASSERT_FALSE(result);
 
 	timer.start();
 	mesh.indexes_size = 4;
 	mesh.indexes = (uint32_t*)(1);
-	result = ecg::is_mesh_closed(&mesh, &status);
+	result = ecg::is_mesh_manifold(&mesh, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::NOT_TRIANGULATED_MESH);
-	ASSERT_TRUE(result);
+	ASSERT_FALSE(result);
 
 	auto& mesh_inst = ecg_meshes::get_instance();
 	ecg::mesh_t closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
@@ -335,21 +335,21 @@ TEST(ecg_api, is_mesh_manifold) {
 	ecg::mesh_t sandglass_non_manifold = mesh_inst.loaded_meshes_by_name["sandglass-non-manifold.obj"]->mesh;
 
 	timer.start();
-	result = ecg::is_mesh_closed(&closed_mesh, &status);
+	result = ecg::is_mesh_manifold(&closed_mesh, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);
 	ASSERT_TRUE(result);
 
 	timer.start();
-	result = ecg::is_mesh_closed(&not_closed_mesh, &status);
+	result = ecg::is_mesh_manifold(&not_closed_mesh, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);
 	ASSERT_FALSE(result);
 
 	timer.start();
-	result = ecg::is_mesh_closed(&sandglass_non_manifold, &status);
+	result = ecg::is_mesh_manifold(&sandglass_non_manifold, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);

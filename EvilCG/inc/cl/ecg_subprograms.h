@@ -666,8 +666,8 @@ namespace ecg {
 				while (true) {
 					if (*result == false) return;
 
-					struct edge_t new_edge = { 0, 0 };
-					struct face_t temp_face = { 0, 0, 0 };
+					struct edge_t new_edge; new_edge.id0 = 0; new_edge.id1 = 0;
+					struct face_t temp_face; temp_face.id0 = 0; temp_face.id1 = 0; temp_face.id2 = 0;
 					bool edge_found = false;
 
 					for (uint32_t face_id = 0; face_id < faces_cnt; ++face_id) {

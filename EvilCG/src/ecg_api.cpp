@@ -524,11 +524,11 @@ namespace ecg {
 				is_closed_buffer
 			);
 
-			//is_mesh_vertexes_manifold_prog.execute(
-			//	queue, is_mesh_vertexes_manifold_name, global, local,
-			//	ind_buffer, ind_buffer_size,
-			//	all_vertexes_manifold_buffer
-			//);
+			is_mesh_vertexes_manifold_prog.execute(
+				queue, is_mesh_vertexes_manifold_name, global, local,
+				ind_buffer, ind_buffer_size,
+				all_vertexes_manifold_buffer
+			);
 
 			queue.enqueueReadBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
 			queue.enqueueReadBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_closed);
