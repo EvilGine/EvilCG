@@ -330,9 +330,9 @@ TEST(ecg_api, is_mesh_manifold) {
 	ASSERT_FALSE(result);
 
 	auto& mesh_inst = ecg_meshes::get_instance();
-	ecg::mesh_t closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
-	ecg::mesh_t not_closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
-	ecg::mesh_t sandglass_non_manifold = mesh_inst.loaded_meshes_by_name["sandglass-non-manifold.obj"]->mesh;
+	ecg::mesh_t& closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
+	ecg::mesh_t& not_closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
+	ecg::mesh_t& sandglass_non_manifold = mesh_inst.loaded_meshes_by_name["sandglass-non-manifold.obj"]->mesh;
 
 	timer.start();
 	result = ecg::is_mesh_manifold(&closed_mesh, &status);

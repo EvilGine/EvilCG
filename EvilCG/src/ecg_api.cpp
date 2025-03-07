@@ -492,7 +492,7 @@ namespace ecg {
 			if (mesh->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
 			
 			bool all_vertexes_manifold = true;
-			bool is_closed = true;
+			bool is_mesh_closed = true;
 
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -511,30 +511,30 @@ namespace ecg {
 			cl::Buffer all_vertexes_manifold_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 
 			op_res = queue.enqueueWriteBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
+			op_res = queue.enqueueWriteBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_mesh_closed);
 			op_res = queue.enqueueWriteBuffer(ind_buffer, CL_FALSE, 0, ind_buffer_size, mesh->indexes);
-			op_res = queue.enqueueWriteBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_closed);
 			queue.finish();
 
 			cl::NDRange global = cl::NDRange(mesh->indexes_size);
 			cl::NDRange local = cl::NullRange;
 
-			is_mesh_closed_prog.execute(
+			op_res = is_mesh_closed_prog.execute(
 				queue, is_mesh_closed_name, global, local,
 				ind_buffer, ind_buffer_size,
 				is_closed_buffer
 			);
 
-			is_mesh_vertexes_manifold_prog.execute(
+			op_res = is_mesh_vertexes_manifold_prog.execute(
 				queue, is_mesh_vertexes_manifold_name, global, local,
 				ind_buffer, ind_buffer_size,
 				all_vertexes_manifold_buffer
 			);
 
-			queue.enqueueReadBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
-			queue.enqueueReadBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_closed);
-			queue.finish();
+			op_res = queue.enqueueReadBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
+			op_res = queue.enqueueReadBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_mesh_closed);
+			op_res = queue.finish();
 
-			result = is_closed && all_vertexes_manifold;
+			result = is_mesh_closed && all_vertexes_manifold;
 		}
 		catch (...) {
 			if (op_res == status_code::SUCCESS)
