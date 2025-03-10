@@ -60,7 +60,7 @@ namespace ecg {
 	}
 
 	cl::Device ecg_host_ctrl::find_best_device() {
-		std::map<cl_platform_id, cl::vector<cl::Device>> devices_of_platform;
+		std::unordered_map<cl_platform_id, cl::vector<cl::Device>> devices_of_platform;
 		std::vector<cl::Platform> platforms;
 
 		cl::Platform::get(&platforms);
@@ -70,28 +70,38 @@ namespace ecg {
 			platform.getDevices(CL_DEVICE_TYPE_ALL, &item);
 		}
 
-		size_t dev_counter = 0;
-		std::pair<size_t, cl::Device> score_with_device = { INT_MAX, cl::Device() };
+		device_t score_with_device = { -1, 0, cl::Device() };
 		for (auto& item : devices_of_platform) {
 			for (cl::Device& dev : item.second) {
 				size_t score = get_device_score(dev);
 
-				if (score_with_device.first >= score) {
-					score_with_device.first = score;
-					score_with_device.second = dev;
+				if (score_with_device.score <= score) {
+					score_with_device.score = score;
+					score_with_device.device = dev;
 				}
 			}
 		}
 
-		return score_with_device.second;
+		return score_with_device.device;
 	}
 
-	cl_int ecg_host_ctrl::default_init() {
+	cl_int ecg_host_ctrl::default_init(int device_id) {
 		cl_int op_res = CL_SUCCESS;
 		cl_uint num_platforms = 0;
 		m_is_initialized = false;
+		cl::Device dev;
 
-		cl::Device dev = find_best_device();
+		if (device_id >= 0) {
+			auto devices = get_available_devices();
+			if (device_id < devices.size()) {
+				auto dev_begin = devices.begin();
+				std::advance(dev_begin, device_id);
+				dev = (*dev_begin).device;
+			}
+		}
+
+		if(dev == cl::Device())
+			dev = find_best_device();
 
 		if (dev != cl::Device()) {
 			m_main_device = dev;
@@ -104,13 +114,34 @@ namespace ecg {
 		return op_res;
 	}
 
-	ecg_host_ctrl::ecg_host_ctrl() {
+	ecg_host_ctrl::ecg_host_ctrl(int device_id) {
 		static std::once_flag m_init_flag;
-		std::call_once(m_init_flag, [this] { default_init(); });
+		std::call_once(m_init_flag, [this, device_id] { default_init(device_id); });
 	}
 
-	ecg_host_ctrl& ecg_host_ctrl::get_instance() {
-		static ecg_host_ctrl m_instance;
+	std::list<device_t> ecg_host_ctrl::get_available_devices() {
+		std::vector<cl::Platform> platforms;
+		cl::Platform::get(&platforms);
+		std::list<device_t> result;
+		int id = 0;
+
+		for (cl::Platform& platform : platforms) {
+			std::vector<cl::Device> devices;
+			platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+			
+			for (auto& dev : devices) {
+				result.push_back(device_t{
+					id, get_device_score(dev), dev
+				});
+				++id;
+			}
+		}
+
+		return result;
+	}
+
+	ecg_host_ctrl& ecg_host_ctrl::get_instance(int device_id) {
+		static ecg_host_ctrl m_instance(device_id);
 		return m_instance;
 	}
 }

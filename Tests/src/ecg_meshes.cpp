@@ -103,21 +103,26 @@ void ecg_meshes::load_meshes(std::string path_to_meshes) {
 
 	for (auto& item : dir_iter) {
         auto fl_path = item.path();
-        if (fl_path.extension() == ".obj" && fl_path.filename().string().find("_res.obj") == std::string::npos) {
-            if (fl_path.filename().string().find("_test") != std::string::npos) continue;
+        auto fl_name = fl_path.filename().string();
+
+        if (fl_path.extension() == ".obj" && fl_name.find("_res.obj") == std::string::npos) {
+            if (fl_name.find("_test") != std::string::npos) continue;
             ecg::mesh_t mesh = load_mesh_from_obj(fl_path.string());
-            loaded_meshes.push_back(ecg_test_mesh{ fl_path, mesh});
+
+            ecg_test_mesh_ptr mesh_ptr(new ecg_test_mesh{ fl_path, mesh });
+            loaded_meshes_by_name[fl_name] = mesh_ptr;
+            loaded_meshes.push_back(mesh_ptr);
         }
 	}
 }
 
 ecg_meshes::~ecg_meshes() {
     for (auto& item : template_meshes) {
-        delete_mesh(&item.mesh);
+        delete_mesh(&item->mesh);
     }
 
     for (auto& item : loaded_meshes) {
-        delete_mesh(&item.mesh);
+        delete_mesh(&item->mesh);
     }
 }
 
@@ -214,8 +219,9 @@ void ecg_meshes::internal_init() {
     size_t init_size = 13;
 
     for (auto& item : template_meshes) {
-        item.full_path = "mesh_" + std::to_string(init_size);
-        init_mesh(&item.mesh, init_size);
+        item = ecg_test_mesh_ptr(new ecg_test_mesh());
+        item->full_path = "mesh_" + std::to_string(init_size);
+        init_mesh(&item->mesh, init_size);
         init_size += increment;
     }
 }

@@ -129,9 +129,39 @@ namespace ecg {
 	/// </returns>
 	ECG_API mat3_base compute_covariance_matrix(const mesh_t* mesh, ecg_status* status = nullptr);
 
-	// [+] Should be added next
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="mesh">
+	/// Pointer to the mesh data structure containing vertex and index arrays that define the mesh geometry.
+	/// The function requires that the mesh contains valid vertex data; otherwise, an error status is returned.
+	/// </param>
+	/// <param name="status">
+	/// Optional pointer to an <c>ecg_status</c> variable that stores the execution status of the function. 
+	/// If provided, it indicates success or describes any errors encountered (e.g., null pointer, empty or invalid mesh).
+	/// If <c>nullptr</c>, the function does not return status information.
+	/// </param>
+	/// <returns></returns>
 	ECG_API bool is_mesh_closed(const mesh_t* mesh, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="mesh"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
 	ECG_API bool is_mesh_manifold(const mesh_t* mesh, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="mesh"></param>
+	/// <param name="base_num_vert"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
+	ECG_API void triangulate_mesh(mesh_t* mesh, int base_num_vert, ecg_status* status = nullptr);
+	
+	// [+] Should be added next
 	ECG_API std::vector<vec3_base> find_nearest_vertices(const mesh_t* mesh, const vec3_base* point, int k, ecg_status* status = nullptr);
 
 	// [-] Not implemented

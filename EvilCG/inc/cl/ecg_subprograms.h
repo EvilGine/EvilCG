@@ -5,6 +5,30 @@
 namespace ecg {
 	#define NAME_OF(VAR) "\n"#VAR
 
+	/// <summary>
+	/// Namespace with structures for OpenCL kernel codes
+	/// </summary>
+	namespace cl_structs {
+		const std::string face_struct =
+			NAME_OF(
+				struct face_t {
+					\n
+						uint32_t id0; \n
+						uint32_t id1; \n
+						uint32_t id2; \n
+				}; \n
+			);
+
+		const std::string edge_struct =
+			NAME_OF(
+				struct edge_t { \n
+					uint32_t id0; \n
+					uint32_t id1; \n
+				}; \n
+			);
+	}
+
+	const std::string typedef_uint32_t = "\ntypedef unsigned int uint32_t;\n";
 	const std::string enable_atomics_def = "\n#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n";
 
 	const std::string mul_mat_vec =
@@ -194,6 +218,17 @@ namespace ecg {
 			} \n
 		);
 
+	const std::string get_face =
+		NAME_OF(
+			struct face_t get_face(__global uint32_t* indexes, uint32_t id) {
+				struct face_t result;
+				result.id0 = indexes[id * 3 + 0];
+				result.id1 = indexes[id * 3 + 1];
+				result.id2 = indexes[id * 3 + 2];
+				return  result;
+			}
+		);
+
 	const std::string cross_product =
 		NAME_OF(
 			float3 cross_product(float3 a, float3 b) {
@@ -353,6 +388,8 @@ namespace ecg {
 				const int group_id = get_group_id(0);
 				const int gid = get_global_id(0);
 				const int lid = get_local_id(0);
+
+				if (gid >= vert_arr_len) return;
 
 				const int offset = group_id * group_size;
 				float3 v1 = gid * 2 < vert_arr_len ? get_vertex(gid * 2, vertexes, vert_size) : (float3)(0);
@@ -547,6 +584,154 @@ namespace ecg {
 
 				barrier(CLK_LOCAL_MEM_FENCE);
 				if(lid == 0) atomic_add_f(surface_area, local_surf_area);
+			}
+		);
+
+	const std::string is_mesh_closed_name = "is_mesh_closed";
+	const std::string is_mesh_closed_code =
+		typedef_uint32_t +
+		enable_atomics_def +
+		cl_structs::face_struct +
+		cl_structs::edge_struct +
+		get_face +
+		NAME_OF(
+			__kernel void is_mesh_closed(
+				__global uint32_t* indexes, uint32_t indexes_cnt,
+				__global bool* result
+			) {
+				uint32_t gid = get_global_id(0);
+				if (gid >= indexes_cnt - 1) return;
+
+				struct edge_t current_edge;
+				int edges_includes = 0;
+
+				if (gid % 3 == 0 || gid % 3 == 1) {
+					current_edge.id0 = indexes[gid]; 
+					current_edge.id1 = indexes[gid + 1];
+				}
+				else if (gid % 3 == 2) {
+					current_edge.id0 = indexes[gid];
+					current_edge.id1 = indexes[gid - 2];
+				}
+
+				for (uint32_t face_id = 0; face_id < indexes_cnt / 3; ++face_id) {
+					if (*result == false) break;
+					int is_face_contains_edge = 0;
+					struct face_t face = get_face(indexes, face_id);
+
+					if (face.id0 == current_edge.id0 || face.id1 == current_edge.id0 || face.id2 == current_edge.id0)
+						++is_face_contains_edge;
+					if (face.id0 == current_edge.id1 || face.id1 == current_edge.id1 || face.id2 == current_edge.id1)
+						++is_face_contains_edge;
+					if (is_face_contains_edge == 2)
+						++edges_includes;
+				}
+
+				if (edges_includes != 2)
+					*result = false;
+			}
+		);
+
+	const std::string is_mesh_vertexes_manifold_name = "is_mesh_vertexes_manifold";
+	const std::string is_mesh_vertexes_manifold_code =
+		typedef_uint32_t +
+		cl_structs::face_struct +
+		cl_structs::edge_struct +
+		get_face +
+		NAME_OF(
+			__kernel void is_mesh_vertexes_manifold( \n
+				__global uint32_t* indexes, uint32_t indexes_cnt, \n
+				__global bool* result \n
+			) {
+				uint32_t faces_cnt = indexes_cnt / 3; \n
+				uint32_t curr_ind = get_global_id(0); \n
+				if (curr_ind >= indexes_cnt - 1) return; \n
+
+				struct edge_t current_edge; current_edge.id0 = 0; current_edge.id1 = 0; \n
+				struct edge_t origin_edge; origin_edge.id0 = 0; origin_edge.id1 = 0; \n
+				struct edge_t prev_edge; prev_edge.id0 = 0; prev_edge.id1 = 0; \n
+
+				if (curr_ind % 3 == 0 || curr_ind % 3 == 1) { \n
+					origin_edge.id0 = indexes[curr_ind]; \n
+					origin_edge.id1 = indexes[curr_ind + 1]; \n
+				} \n
+				else if (curr_ind % 3 == 2) { \n
+					origin_edge.id0 = indexes[curr_ind]; \n
+					origin_edge.id1 = indexes[curr_ind - 2]; \n
+				} \n
+
+				current_edge = origin_edge; \n
+
+				while (true) { \n
+					if (*result == false) return; \n
+
+					struct edge_t new_edge; new_edge.id0 = 0; new_edge.id1 = 0; \n
+					struct face_t temp_face; temp_face.id0 = 0; temp_face.id1 = 0; temp_face.id2 = 0; \n
+					bool edge_found = false; \n
+
+					for (uint32_t face_id = 0; face_id < faces_cnt; ++face_id) { \n
+						temp_face = get_face(indexes, face_id); \n
+
+						bool contains_edge = \n
+							(current_edge.id0 == temp_face.id0 && current_edge.id1 == temp_face.id1) || \n
+							(current_edge.id0 == temp_face.id1 && current_edge.id1 == temp_face.id2) || \n
+							(current_edge.id0 == temp_face.id2 && current_edge.id1 == temp_face.id0) || \n
+							(current_edge.id1 == temp_face.id0 && current_edge.id0 == temp_face.id1) || \n
+							(current_edge.id1 == temp_face.id1 && current_edge.id0 == temp_face.id2) || \n
+							(current_edge.id1 == temp_face.id2 && current_edge.id0 == temp_face.id0); \n
+
+						if (contains_edge) { \n
+							edge_found = true; \n
+
+							if (current_edge.id0 == temp_face.id0 && current_edge.id1 == temp_face.id1) { \n
+								if (prev_edge.id0 == temp_face.id1 && prev_edge.id1 == temp_face.id2) { \n
+									new_edge.id0 = temp_face.id2; \n
+									new_edge.id1 = temp_face.id0; \n
+								} \n
+								else { \n
+									new_edge.id0 = temp_face.id1; \n
+									new_edge.id1 = temp_face.id2; \n
+								} \n
+							} \n
+							else if (current_edge.id0 == temp_face.id1 && current_edge.id1 == temp_face.id2) { \n
+								if (prev_edge.id0 == temp_face.id2 && prev_edge.id1 == temp_face.id0) { \n
+									new_edge.id0 = temp_face.id0; \n
+									new_edge.id1 = temp_face.id1; \n
+								} \n
+								else { \n
+									new_edge.id0 = temp_face.id2; \n
+									new_edge.id1 = temp_face.id0; \n
+								} \n
+							} \n
+							else if (current_edge.id0 == temp_face.id2 && current_edge.id1 == temp_face.id0) { \n
+								if (prev_edge.id0 == temp_face.id0 && prev_edge.id1 == temp_face.id1) { \n
+									new_edge.id0 = temp_face.id1; \n
+									new_edge.id1 = temp_face.id2; \n
+								} \n
+								else { \n
+									new_edge.id0 = temp_face.id0; \n
+									new_edge.id1 = temp_face.id1; \n
+								} \n
+							} \n
+
+
+							break; \n
+						} \n
+					} \n
+
+					if (!edge_found) { \n
+						*result = false; \n
+						return; \n
+					} \n
+
+					prev_edge = current_edge; \n
+					current_edge = new_edge; \n
+
+					if (current_edge.id0 == origin_edge.id0 && \n
+						current_edge.id1 == origin_edge.id1) { \n
+						return; \n
+					} \n
+				} \n
 			}
 		);
 }
