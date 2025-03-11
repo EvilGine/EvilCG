@@ -284,6 +284,8 @@ TEST(ecg_api, is_mesh_closed) {
 	auto& mesh_inst = ecg_meshes::get_instance();
 	ecg::mesh_t true_test = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
 	ecg::mesh_t false_test = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
+	ecg::mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
+	ecg::mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
 
 	timer.start();
 	result = ecg::is_mesh_closed(&true_test, &status);
@@ -294,6 +296,20 @@ TEST(ecg_api, is_mesh_closed) {
 
 	timer.start();
 	result = ecg::is_mesh_closed(&false_test, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	result = ecg::is_mesh_manifold(&surface_1_non_manifold, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	result = ecg::is_mesh_manifold(&surface_2_non_manifold, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);
@@ -333,6 +349,8 @@ TEST(ecg_api, is_mesh_manifold) {
 	ecg::mesh_t& closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
 	ecg::mesh_t& not_closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
 	ecg::mesh_t& sandglass_non_manifold = mesh_inst.loaded_meshes_by_name["sandglass-non-manifold.obj"]->mesh;
+	ecg::mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
+	ecg::mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
 
 	timer.start();
 	result = ecg::is_mesh_manifold(&closed_mesh, &status);
@@ -350,6 +368,20 @@ TEST(ecg_api, is_mesh_manifold) {
 
 	timer.start();
 	result = ecg::is_mesh_manifold(&sandglass_non_manifold, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	result = ecg::is_mesh_manifold(&surface_1_non_manifold, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	result = ecg::is_mesh_manifold(&surface_2_non_manifold, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);

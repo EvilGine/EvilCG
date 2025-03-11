@@ -448,9 +448,12 @@ namespace ecg {
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
 
+			cl_uint vertexes_size = mesh->vertexes_size;
+			cl_uint indexes_size = mesh->indexes_size;
+
 			cl_int ind_buffer_size = mesh->indexes_size * sizeof(mesh->indexes[0]);
 			cl::Buffer result_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
-			cl::Buffer ind_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, ind_buffer_size);
+			cl::Buffer ind_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, ind_buffer_size);
 
 			cl::Program::Sources sources = { is_mesh_closed_code };
 			ecg_program is_mesh_close_program(context, dev, sources);
@@ -464,7 +467,7 @@ namespace ecg {
 
 			is_mesh_close_program.execute(
 				queue, is_mesh_closed_name, global, local,
-				ind_buffer, ind_buffer_size,
+				ind_buffer, indexes_size,
 				result_buffer
 			);
 
@@ -505,9 +508,12 @@ namespace ecg {
 			ecg_program is_mesh_closed_prog(context, dev, is_mesh_closed_src);
 			ecg_program is_mesh_vertexes_manifold_prog(context, dev, is_mesh_vertex_manifold_src);
 
-			cl_int ind_buffer_size = mesh->indexes_size * sizeof(mesh->indexes[0]);
-			cl::Buffer ind_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, ind_buffer_size);
-			cl::Buffer is_closed_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
+			cl_uint vertexes_size = mesh->vertexes_size;
+			cl_uint indexes_size = mesh->indexes_size;
+
+			cl_uint ind_buffer_size = mesh->indexes_size * sizeof(mesh->indexes[0]);
+			cl::Buffer ind_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, ind_buffer_size);
+			cl::Buffer is_closed_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(bool));
 			cl::Buffer all_vertexes_manifold_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 
 			op_res = queue.enqueueWriteBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
@@ -515,18 +521,18 @@ namespace ecg {
 			op_res = queue.enqueueWriteBuffer(ind_buffer, CL_FALSE, 0, ind_buffer_size, mesh->indexes);
 			queue.finish();
 
-			cl::NDRange global = cl::NDRange(mesh->indexes_size);
+			cl::NDRange global = cl::NDRange(mesh->vertexes_size);
 			cl::NDRange local = cl::NullRange;
 
 			op_res = is_mesh_closed_prog.execute(
 				queue, is_mesh_closed_name, global, local,
-				ind_buffer, ind_buffer_size,
+				ind_buffer, indexes_size,
 				is_closed_buffer
 			);
 
 			op_res = is_mesh_vertexes_manifold_prog.execute(
 				queue, is_mesh_vertexes_manifold_name, global, local,
-				ind_buffer, ind_buffer_size,
+				ind_buffer, indexes_size, vertexes_size,
 				all_vertexes_manifold_buffer
 			);
 
