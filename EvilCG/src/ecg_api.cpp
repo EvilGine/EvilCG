@@ -8,31 +8,32 @@
 #include <help/ecg_geom.h>
 
 namespace ecg {
-	template <class T>
-	void delete_array(array_t<T>* arr) {
-		if (arr != nullptr) {
-			delete[] arr->arr_ptr;
-			arr->arr_sz = 0;
-		}
+	void default_mesh_check(const mesh_t* mesh, ecg_status_handler& op_res, ecg_status* status) {
+		if (status != nullptr) *status = status_code::SUCCESS;
+		if (mesh == nullptr) op_res = status_code::INVALID_ARG;
+		if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+		if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
+		if (mesh->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
+	}
+
+	void on_exception(ecg_status_handler& op_res, ecg_status* status) {
+		if (op_res == status_code::SUCCESS)
+			op_res = status_code::UNKNOWN_EXCEPTION;
+		if (status != nullptr)
+			*status = op_res.get_status();
 	}
 
 	vec3_base get_center(const mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
-
+			default_mesh_check(mesh, op_res, status);
 			vec3_base acc = summ_vertexes(mesh, status); 
 			if (status != nullptr) op_res = *status;
 			return acc / mesh->vertexes_size;
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
-			if (status != nullptr)
-				*status = op_res.get_status();
+			on_exception(op_res, status);
 		}
 
 		return vec3_base();
@@ -43,9 +44,7 @@ namespace ecg {
 		vec3_base result;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+			default_mesh_check(mesh, op_res, status);
 
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -102,10 +101,7 @@ namespace ecg {
 			result = acc_vector[0];
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
-			if (status != nullptr)
-				*status = op_res.get_status();
+			on_exception(op_res, status);
 		}
 
 		return result;
@@ -116,9 +112,7 @@ namespace ecg {
 		ecg_status_handler op_res;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+			default_mesh_check(mesh, op_res, status);
 			
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -149,10 +143,7 @@ namespace ecg {
 			op_res = queue.finish();
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
-			if (status != nullptr)
-				*status = op_res.get_status();
+			on_exception(op_res, status);
 		}
 
 		return result_bb;
@@ -163,9 +154,7 @@ namespace ecg {
 		ecg_status_handler op_res;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+			default_mesh_check(mesh, op_res, status);
 			
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -244,10 +233,7 @@ namespace ecg {
 			result_obb.p7 = center + transf * result_obb.p7;
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
-			if (status != nullptr)
-				*status = op_res.get_status();
+			on_exception(op_res, status);
 		}
 
 		return result_obb;
@@ -274,17 +260,12 @@ namespace ecg {
 		ecg_status_handler op_res;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr || k <= 0 || point == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR; 
+			default_mesh_check(mesh, op_res, status);
 
 
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
-			if (status != nullptr)
-				*status = op_res.get_status();
+			on_exception(op_res, status);
 		}
 
 		return result;
@@ -295,11 +276,7 @@ namespace ecg {
 		float result = -FLT_MAX;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
-			if (mesh->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
+			default_mesh_check(mesh, op_res, status);
 
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -326,7 +303,7 @@ namespace ecg {
 			op_res = queue.enqueueWriteBuffer(vert_buffer, CL_FALSE, 0, vert_buffer_sz, mesh->vertexes);
 			op_res = queue.enqueueWriteBuffer(ind_buffer, CL_FALSE, 0, ind_buffer_sz, mesh->indexes);
 			op_res = queue.enqueueFillBuffer(surf_area_buff, 0, 0, sizeof(float));
-			queue.finish();
+			op_res = queue.finish();
 
 			op_res = program.execute(
 				queue, compute_surface_area_name, global, local,
@@ -336,13 +313,10 @@ namespace ecg {
 			);
 
 			op_res = queue.enqueueReadBuffer(surf_area_buff, CL_FALSE, 0, sizeof(float), &result);
-			queue.finish();
+			op_res = queue.finish();
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
-			if (status != nullptr)
-				*status = op_res.get_status();
+			on_exception(op_res, status);
 		}
 
 		return result;
@@ -353,14 +327,9 @@ namespace ecg {
 		ecg_status_handler op_res;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (m1 == nullptr || m2 == nullptr) op_res = status_code::INVALID_ARG;
-			if (m1->indexes == nullptr || m1->indexes_size <= 0 || 
-				m2->indexes == nullptr || m2->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-			if (m1->vertexes == nullptr || m1->vertexes_size <= 0 ||
-				m2->vertexes == nullptr || m2->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
-			if (m1->indexes_size % 3 != 0 || m2->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
-		
+			default_mesh_check(m1, op_res, status);
+			default_mesh_check(m2, op_res, status);
+
 			const vec3_base m1_center = get_center(m1, status);
 			const vec3_base m2_center = get_center(m1, status);
 		
@@ -381,9 +350,7 @@ namespace ecg {
 		ecg_status_handler op_res;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+			default_mesh_check(mesh, op_res, status);
 
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -424,10 +391,7 @@ namespace ecg {
 			op_res = queue.finish();
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
-			if (status != nullptr)
-				*status = op_res.get_status();
+			on_exception(op_res, status);
 		}
 
 		return cov_mat;
@@ -438,10 +402,7 @@ namespace ecg {
 		bool result = true;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-			if (mesh->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
+			default_mesh_check(mesh, op_res, status);
 
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -460,25 +421,22 @@ namespace ecg {
 			
 			op_res = queue.enqueueWriteBuffer(result_buffer, CL_FALSE, 0, sizeof(bool), &result);
 			op_res = queue.enqueueWriteBuffer(ind_buffer, CL_FALSE, 0, ind_buffer_size, mesh->indexes);
-			queue.finish();
+			op_res = queue.finish();
 
 			cl::NDRange global = cl::NDRange(mesh->indexes_size);
 			cl::NDRange local = cl::NullRange;
 
-			is_mesh_close_program.execute(
+			op_res = is_mesh_close_program.execute(
 				queue, is_mesh_closed_name, global, local,
 				ind_buffer, indexes_size,
 				result_buffer
 			);
 
-			queue.enqueueReadBuffer(result_buffer, CL_FALSE, 0, sizeof(bool), &result);
-			queue.finish();
+			op_res = queue.enqueueReadBuffer(result_buffer, CL_FALSE, 0, sizeof(bool), &result);
+			op_res = queue.finish();
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
-			if (status != nullptr)
-				*status = op_res.get_status();
+			on_exception(op_res, status);
 		}
 
 		return result;
@@ -489,10 +447,7 @@ namespace ecg {
 		bool result = false;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-			if (mesh->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
+			default_mesh_check(mesh, op_res, status);
 			
 			bool all_vertexes_manifold = true;
 			bool is_mesh_closed = true;
@@ -519,7 +474,7 @@ namespace ecg {
 			op_res = queue.enqueueWriteBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
 			op_res = queue.enqueueWriteBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_mesh_closed);
 			op_res = queue.enqueueWriteBuffer(ind_buffer, CL_FALSE, 0, ind_buffer_size, mesh->indexes);
-			queue.finish();
+			op_res = queue.finish();
 
 			cl::NDRange global = cl::NDRange(mesh->vertexes_size);
 			cl::NDRange local = cl::NullRange;
@@ -543,10 +498,62 @@ namespace ecg {
 			result = is_mesh_closed && all_vertexes_manifold;
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
-			if (status != nullptr)
-				*status = op_res.get_status();
+			on_exception(op_res, status);
+		}
+
+		return result;
+	}
+
+	bool is_mesh_self_intersected(const mesh_t* mesh, self_intersection_method method, ecg_status* status) {
+		ecg_status_handler op_res;
+		bool result = false;
+		
+		try {
+			default_mesh_check(mesh, op_res, status);
+		
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			cl::Program::Sources source = { is_mesh_self_intersected_code };
+			ecg_program is_self_intersected_prog(context, dev, source);
+
+			cl_uint indexes_size = mesh->indexes_size;
+			cl_uint indexes_buffer_size = sizeof(mesh->indexes[0]) * mesh->indexes_size;
+			cl::Buffer indexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, indexes_buffer_size);
+
+			cl_uint vertexes_size = mesh->vertexes_size;
+			cl_uint vertexes_buffer_size = sizeof(mesh->vertexes[0]) * mesh->vertexes_size;
+			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertexes_buffer_size);
+
+			cl::Buffer is_self_intersected_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
+
+			if (method == self_intersection_method::BRUTEFORCE) {
+				cl::NDRange global = mesh->vertexes_size;
+				cl::NDRange local = cl::NullRange;
+
+				op_res = queue.enqueueWriteBuffer(indexes_buffer, CL_FALSE, 0, indexes_buffer_size, mesh->indexes);
+				op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, vertexes_buffer_size, mesh->vertexes);
+				op_res = queue.enqueueWriteBuffer(is_self_intersected_buffer, CL_FALSE, 0, sizeof(bool), &result);
+				op_res = queue.finish();
+
+				op_res = is_self_intersected_prog.execute(
+					queue, is_mesh_self_intersected_name, global, local,
+					vertexes_buffer, vertexes_size,
+					indexes_buffer, indexes_size,
+					is_self_intersected_buffer
+				);
+
+				op_res = queue.enqueueReadBuffer(is_self_intersected_buffer, CL_FALSE, 0, sizeof(bool), &result);
+				op_res = queue.finish();
+			}
+			else {
+				op_res = status_code::INCORRECT_METHOD;
+			}
+		}
+		catch (...) {
+			on_exception(op_res, status);
 		}
 
 		return result;

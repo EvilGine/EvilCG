@@ -287,6 +287,13 @@ namespace ecg {
 			}
 		);
 
+	const std::string is_faces_intersect =
+		NAME_OF(
+			bool is_faces_intersect(__global float3* vertexes, struct face_t f1, struct face_t f2) {
+				
+			}
+		);
+
 	const std::string cross_product =
 		NAME_OF(
 			float3 cross_product(float3 a, float3 b) {
@@ -832,6 +839,25 @@ namespace ecg {
 					return; \n
 				} \n
 			} \n
+		);
+
+	const std::string is_mesh_self_intersected_name = "is_mesh_self_intersected";
+	const std::string is_mesh_self_intersected_code =
+		typedef_uint32_t +
+		cl_structs::face_struct +
+		get_face +
+		NAME_OF(
+			__kernel void is_mesh_self_intersected(
+				__global float3* vertexes, uint32_t vertexes_cnt,
+				__global uint32_t* indexes, uint32_t indexes_cnt,
+				__global bool* is_self_intersected
+			) {
+				uint32_t faces_cnt = indexes_cnt / 3;
+				uint32_t face_id = get_global_id(0);
+				if (face_id > faces_cnt) return;
+
+
+			}
 		);
 }
 

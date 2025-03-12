@@ -20,13 +20,11 @@ namespace ecg {
 		NOT_EQUAL = -1,
 	};
 
-	/// <summary>
-	/// Delete array_t that was allocated in library
-	/// </summary>
-	/// <param name="arr"></param>
-	/// <returns></returns>
-	template <class T>
-	ECG_API void delete_array(array_t<T>* arr);
+	enum self_intersection_method {
+		BRUTEFORCE,
+		/*BHV_ALGORITHM,*/
+		METHODS_COUNT
+	};
 
 	/// <summary>
 	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
@@ -151,6 +149,14 @@ namespace ecg {
 	/// <param name="status"></param>
 	/// <returns></returns>
 	ECG_API bool is_mesh_manifold(const mesh_t* mesh, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="mesh"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
+	ECG_API bool is_mesh_self_intersected(const mesh_t* mesh, self_intersection_method method, ecg_status* status = nullptr);
 
 	/// <summary>
 	/// 

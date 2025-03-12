@@ -191,40 +191,54 @@ TEST(ecg_api, compute_surface_area) {
 
 	timer.start();
 	result_surf_area = ecg::compute_surface_area(nullptr, &status);
+	timer.end();
+	
 	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
 	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
-	timer.end();
 
 	timer.start();
 	result_surf_area = ecg::compute_surface_area(&mesh, &status);
-	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
-	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
 	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
 
 	timer.start();
 	mesh.indexes_size = 4;
-	mesh.indexes = new uint32_t[4];
+	mesh.indexes = (uint32_t*)(1);
 	result_surf_area = ecg::compute_surface_area(&mesh, &status);
+	timer.end();
+	
 	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
 	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
+
+	timer.start();
+	mesh.indexes_size = 4;
+	mesh.indexes = (uint32_t*)(1);
+	result_surf_area = ecg::compute_surface_area(&mesh, &status);
 	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
 
 	timer.start();
 	mesh.vertexes_size = 4;
 	mesh.vertexes = new ecg::vec3_base[4];
 	result_surf_area = ecg::compute_surface_area(&mesh, &status);
+	timer.end();
+	
 	ASSERT_EQ(status, ecg::status_code::NOT_TRIANGULATED_MESH);
 	EXPECT_FLOAT_EQ(result_surf_area, -FLT_MAX);
-	timer.end();
 
 	auto& mesh_inst = ecg_meshes::get_instance();
 	for (size_t mesh_id = 0; mesh_id < mesh_inst.loaded_meshes.size(); ++mesh_id) {
 		timer.start();
 		auto item = mesh_inst.loaded_meshes[mesh_id];
 		result_surf_area = ecg::compute_surface_area(&item->mesh, &status);
+		timer.end();
+
 		ASSERT_EQ(status, ecg::status_code::SUCCESS);
 		ASSERT_NE(result_surf_area, -FLT_MAX);
-		timer.end();
 	}
 }
 
@@ -274,6 +288,15 @@ TEST(ecg_api, is_mesh_closed) {
 	ASSERT_TRUE(result);
 
 	timer.start();
+	result = ecg::is_mesh_closed(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	ASSERT_TRUE(result);
+
+	timer.start();
+	mesh.vertexes_size = 1;
+	mesh.vertexes = (ecg::vec3_base*)(1);
 	result = ecg::is_mesh_closed(&mesh, &status);
 	timer.end();
 
@@ -333,12 +356,23 @@ TEST(ecg_api, is_mesh_manifold) {
 	result = ecg::is_mesh_manifold(&mesh, &status);
 	timer.end();
 
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	mesh.vertexes_size = 3;
+	mesh.vertexes = (ecg::vec3_base*)(1);
+	result = ecg::is_mesh_manifold(&mesh, &status);
+	timer.end();
+
 	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
 	ASSERT_FALSE(result);
 
 	timer.start();
 	mesh.indexes_size = 4;
 	mesh.indexes = (uint32_t*)(1);
+	mesh.vertexes_size = 1;
+	mesh.vertexes = (ecg::vec3_base*)(1);
 	result = ecg::is_mesh_manifold(&mesh, &status);
 	timer.end();
 
@@ -382,6 +416,73 @@ TEST(ecg_api, is_mesh_manifold) {
 
 	timer.start();
 	result = ecg::is_mesh_manifold(&surface_2_non_manifold, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
+}
+
+TEST(ecg_api, is_mesh_self_intersected) {
+	auto invalid_method = ecg::self_intersection_method::METHODS_COUNT;
+	auto method = ecg::self_intersection_method::BRUTEFORCE;
+	ecg::ecg_status status;
+	custom_timer_t timer;
+	bool result = false;
+	ecg::mesh_t mesh;
+
+	timer.start();
+	result = ecg::is_mesh_self_intersected(nullptr, method, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	result = ecg::is_mesh_self_intersected(&mesh, method, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	mesh.vertexes_size = 1;
+	mesh.vertexes = (ecg::vec3_base*)(1);
+	result = ecg::is_mesh_self_intersected(&mesh, method, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	mesh.indexes_size = 4;
+	mesh.indexes = (uint32_t*)(1);
+	result = ecg::is_mesh_self_intersected(&mesh, method, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::NOT_TRIANGULATED_MESH);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	mesh.indexes_size = 3;
+	result = ecg::is_mesh_self_intersected(&mesh, invalid_method, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::INCORRECT_METHOD);
+	ASSERT_FALSE(result);
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	ecg::mesh_t& not_self_intersected = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
+	ecg::mesh_t& self_intersected = mesh_inst.loaded_meshes_by_name["self_intersected_mesh.obj"]->mesh;
+
+	timer.start();
+	result = ecg::is_mesh_self_intersected(&not_self_intersected, method, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_TRUE(result);
+
+	timer.start();
+	result = ecg::is_mesh_self_intersected(&self_intersected, method, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);
