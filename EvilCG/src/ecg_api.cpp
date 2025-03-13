@@ -449,6 +449,7 @@ namespace ecg {
 		try {
 			default_mesh_check(mesh, op_res, status);
 			
+			bool is_mesh_self_intersected = false;
 			bool all_vertexes_manifold = true;
 			bool is_mesh_closed = true;
 
@@ -459,20 +460,29 @@ namespace ecg {
 
 			cl::Program::Sources is_mesh_closed_src = { is_mesh_closed_code };
 			cl::Program::Sources is_mesh_vertex_manifold_src = { is_mesh_vertexes_manifold_code };
+			cl::Program::Sources is_mesh_self_intersected_src = { is_mesh_self_intersected_code };
 
 			ecg_program is_mesh_closed_prog(context, dev, is_mesh_closed_src);
 			ecg_program is_mesh_vertexes_manifold_prog(context, dev, is_mesh_vertex_manifold_src);
+			ecg_program is_mesh_self_intersected_prog(context, dev, is_mesh_self_intersected_src);
 
+			cl_int vrt_size = sizeof(mesh->vertexes[0]) / sizeof(float);
 			cl_uint vertexes_size = mesh->vertexes_size;
 			cl_uint indexes_size = mesh->indexes_size;
 
 			cl_uint ind_buffer_size = mesh->indexes_size * sizeof(mesh->indexes[0]);
 			cl::Buffer ind_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, ind_buffer_size);
+
+			cl_uint vert_buffer_size = mesh->vertexes_size * sizeof(mesh->vertexes[0]);
+			cl::Buffer vert_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vert_buffer_size);
+
 			cl::Buffer is_closed_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(bool));
+			cl::Buffer is_self_intersected_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(bool));
 			cl::Buffer all_vertexes_manifold_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 
 			op_res = queue.enqueueWriteBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
 			op_res = queue.enqueueWriteBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_mesh_closed);
+			op_res = queue.enqueueWriteBuffer(vert_buffer, CL_FALSE, 0, vert_buffer_size, mesh->vertexes);
 			op_res = queue.enqueueWriteBuffer(ind_buffer, CL_FALSE, 0, ind_buffer_size, mesh->indexes);
 			op_res = queue.finish();
 
@@ -491,11 +501,19 @@ namespace ecg {
 				all_vertexes_manifold_buffer
 			);
 
+			global = mesh->indexes_size / 3;
+			op_res = is_mesh_self_intersected_prog.execute(
+				queue, is_mesh_self_intersected_name, global, local,
+				vert_buffer, vertexes_size, ind_buffer, indexes_size,
+				vrt_size, is_self_intersected_buffer
+			);
+
+			op_res = queue.enqueueReadBuffer(is_self_intersected_buffer, CL_FALSE, 0, sizeof(bool), &is_mesh_self_intersected);
 			op_res = queue.enqueueReadBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
 			op_res = queue.enqueueReadBuffer(is_closed_buffer, CL_FALSE, 0, sizeof(bool), &is_mesh_closed);
 			op_res = queue.finish();
 
-			result = is_mesh_closed && all_vertexes_manifold;
+			result = is_mesh_closed && all_vertexes_manifold && !is_mesh_self_intersected;
 		}
 		catch (...) {
 			on_exception(op_res, status);
@@ -516,6 +534,7 @@ namespace ecg {
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
 
+			cl_int vrt_size = sizeof(mesh->vertexes[0]) / sizeof(float);
 			cl::Program::Sources source = { is_mesh_self_intersected_code };
 			ecg_program is_self_intersected_prog(context, dev, source);
 
@@ -530,7 +549,7 @@ namespace ecg {
 			cl::Buffer is_self_intersected_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 
 			if (method == self_intersection_method::BRUTEFORCE) {
-				cl::NDRange global = mesh->vertexes_size;
+				cl::NDRange global = mesh->indexes_size / 3;
 				cl::NDRange local = cl::NullRange;
 
 				op_res = queue.enqueueWriteBuffer(indexes_buffer, CL_FALSE, 0, indexes_buffer_size, mesh->indexes);
@@ -540,9 +559,8 @@ namespace ecg {
 
 				op_res = is_self_intersected_prog.execute(
 					queue, is_mesh_self_intersected_name, global, local,
-					vertexes_buffer, vertexes_size,
-					indexes_buffer, indexes_size,
-					is_self_intersected_buffer
+					vertexes_buffer, vertexes_size, indexes_buffer, indexes_size,
+					vrt_size, is_self_intersected_buffer
 				);
 
 				op_res = queue.enqueueReadBuffer(is_self_intersected_buffer, CL_FALSE, 0, sizeof(bool), &result);

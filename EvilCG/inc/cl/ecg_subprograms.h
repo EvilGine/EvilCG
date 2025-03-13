@@ -287,21 +287,42 @@ namespace ecg {
 			}
 		);
 
-	const std::string is_faces_intersect =
+	const std::string get_face_normal =
 		NAME_OF(
-			bool is_faces_intersect(__global float3* vertexes, struct face_t f1, struct face_t f2) {
-				
-			}
+			float3 get_face_normal(float3 s0, float3 s1, float3 s2) { \n
+				return cross_product(s1 - s0, s2 - s0); \n
+			} \n\n
+		);
+
+	const std::string does_line_intersect_face =
+		NAME_OF(
+			bool does_line_intersect_face( \n
+				float3 line_start, float3 line_end, \n
+				float3 tri_v0, float3 tri_v1, float3 tri_v2 \n
+			) { \n
+				float3 tri_normal = get_face_normal(tri_v0, tri_v1, tri_v2); \n
+				float3 tri_center = (tri_v0 + tri_v1 + tri_v2) / 3; \n
+				float3 line_dir = line_end - line_start; \n
+
+				float plane_offset = dot(tri_normal, tri_center); \n
+				float dist_to_plane = plane_offset - dot(tri_normal, line_start); \n
+
+				float normal_dot_dir = dot(tri_normal, line_dir); \n
+				if (fabs(normal_dot_dir) < 1e-6) return false \n;
+
+				float t = -dist_to_plane / normal_dot_dir; \n
+				return (t >= 0 && t <= 1); \n
+			} \n
 		);
 
 	const std::string cross_product =
 		NAME_OF(
-			float3 cross_product(float3 a, float3 b) {
-				return (float3)(
-					a.y * b.z - a.z * b.y,
-					a.z * b.x - a.x * b.z,
-					a.x * b.y - a.y * b.x
-				);
+			float3 cross_product(float3 a, float3 b) { \n
+				return (float3)( \n
+					a.y * b.z - a.z * b.y, \n
+					a.z * b.x - a.x * b.z, \n
+					a.x * b.y - a.y * b.x  \n
+				); \n\n
 			}
 		);
 
@@ -845,18 +866,45 @@ namespace ecg {
 	const std::string is_mesh_self_intersected_code =
 		typedef_uint32_t +
 		cl_structs::face_struct +
+		cross_product +
 		get_face +
+		get_vertex +
+		get_face_normal +
+		does_line_intersect_face +
 		NAME_OF(
 			__kernel void is_mesh_self_intersected(
 				__global float3* vertexes, uint32_t vertexes_cnt,
 				__global uint32_t* indexes, uint32_t indexes_cnt,
-				__global bool* is_self_intersected
+				int vrt_size, __global bool* is_self_intersected
 			) {
 				uint32_t faces_cnt = indexes_cnt / 3;
 				uint32_t face_id = get_global_id(0);
 				if (face_id > faces_cnt) return;
 
+				struct face_t curr_face = get_face(indexes, face_id);
+				float3 curr_v0 = get_vertex(curr_face.id0, vertexes, vrt_size);
+				float3 curr_v1 = get_vertex(curr_face.id1, vertexes, vrt_size);
+				float3 curr_v2 = get_vertex(curr_face.id2, vertexes, vrt_size);
 
+				for (uint32_t id = 0; id < faces_cnt; ++id) {
+					if (id == face_id) continue;
+					if (*is_self_intersected) return;
+
+					struct face_t face = get_face(indexes, id);
+					float3 v0 = get_vertex(face.id0, vertexes, vrt_size);
+					float3 v1 = get_vertex(face.id1, vertexes, vrt_size);
+					float3 v2 = get_vertex(face.id2, vertexes, vrt_size);
+
+					if (does_line_intersect_face(curr_v0, curr_v1, v0, v1, v2) ||
+						does_line_intersect_face(curr_v1, curr_v2, v0, v1, v2) ||
+						does_line_intersect_face(curr_v2, curr_v0, v0, v1, v2) ||
+						does_line_intersect_face(v0, v1, curr_v0, curr_v1, curr_v2) ||
+						does_line_intersect_face(v1, v2, curr_v0, curr_v1, curr_v2) ||
+						does_line_intersect_face(v2, v0, curr_v0, curr_v1, curr_v2)) {
+						*is_self_intersected = true;
+						return;
+					}
+				}
 			}
 		);
 }
