@@ -388,7 +388,8 @@ TEST(ecg_api, is_mesh_manifold) {
 	ecg::mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
 	ecg::mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
 	ecg::mesh_t& not_closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
-	ecg::mesh_t& self_intersected = mesh_inst.loaded_meshes_by_name["self_intersected_mesh.obj"]->mesh;
+	ecg::mesh_t& self_intersected_1 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_1.obj"]->mesh;
+	ecg::mesh_t& self_intersected_2 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_2.obj"]->mesh;
 	ecg::mesh_t& sandglass_non_manifold = mesh_inst.loaded_meshes_by_name["sandglass-non-manifold.obj"]->mesh;
 
 	timer.start();
@@ -427,7 +428,14 @@ TEST(ecg_api, is_mesh_manifold) {
 	ASSERT_FALSE(result);
 
 	timer.start();
-	result = ecg::is_mesh_manifold(&self_intersected, &status);
+	result = ecg::is_mesh_manifold(&self_intersected_1, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	result = ecg::is_mesh_manifold(&self_intersected_2, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);
@@ -483,8 +491,25 @@ TEST(ecg_api, is_mesh_self_intersected) {
 	ASSERT_FALSE(result);
 
 	auto& mesh_inst = ecg_meshes::get_instance();
+	ecg::mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
+	ecg::mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
 	ecg::mesh_t& not_self_intersected = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
-	ecg::mesh_t& self_intersected = mesh_inst.loaded_meshes_by_name["self_intersected_mesh.obj"]->mesh;
+	ecg::mesh_t& self_intersected_1 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_1.obj"]->mesh;
+	ecg::mesh_t& self_intersected_2 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_2.obj"]->mesh;
+
+	timer.start();
+	result = ecg::is_mesh_self_intersected(&surface_1_non_manifold, method, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
+
+	timer.start();
+	result = ecg::is_mesh_self_intersected(&surface_2_non_manifold, method, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_FALSE(result);
 
 	timer.start();
 	result = ecg::is_mesh_self_intersected(&not_self_intersected, method, &status);
@@ -494,7 +519,14 @@ TEST(ecg_api, is_mesh_self_intersected) {
 	ASSERT_FALSE(result);
 
 	timer.start();
-	result = ecg::is_mesh_self_intersected(&self_intersected, method, &status);
+	result = ecg::is_mesh_self_intersected(&self_intersected_1, method, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_TRUE(result);
+
+	timer.start();
+	result = ecg::is_mesh_self_intersected(&self_intersected_2, method, &status);
 	timer.end();
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);

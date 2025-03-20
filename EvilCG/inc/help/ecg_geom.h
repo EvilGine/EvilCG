@@ -4,19 +4,11 @@
 #include <api_define.h>
 
 namespace ecg {
-	const float epsilon = 1e-5f;
+	constexpr float epsilon = 1e-6f;
 
-	template <class T>
-	struct array_t {
-		T* arr_ptr;
-		uint32_t arr_sz;
-
-		array_t() :
-			arr_ptr(nullptr),
-			arr_sz(0) {}
-	
-		array_t(void* ptr, uint32_t size) :
-			arr_ptr(ptr), arr_sz(size) {}
+	struct ecg_array_t {
+		void* arr_ptr;
+		size_t arr_size;
 	};
 
 	struct vec3_base {
@@ -53,6 +45,28 @@ namespace ecg {
 		float m20;
 		float m21;
 		float m22;
+	};
+
+	struct mat4_base {
+		float m00;
+		float m01;
+		float m02;
+		float m03;
+
+		float m10;
+		float m11;
+		float m12;
+		float m13;
+
+		float m20;
+		float m21;
+		float m22;
+		float m23;
+
+		float m30;
+		float m31;
+		float m32;
+		float m33;
 	};
 
 	/// <summary>

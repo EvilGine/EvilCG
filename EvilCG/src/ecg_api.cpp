@@ -255,8 +255,8 @@ namespace ecg {
 		return res;
 	}
 
-	std::vector<vec3_base> find_nearest_vertices(const mesh_t* mesh, const vec3_base* point, int k, ecg_status* status) {
-		std::vector<vec3_base> result;
+	ecg_array_t find_nearest_vertices(const mesh_t* mesh, const vec3_base* point, int k, ecg_status* status) {
+		ecg_array_t result;
 		ecg_status_handler op_res;
 
 		try {
@@ -467,12 +467,12 @@ namespace ecg {
 			ecg_program is_mesh_self_intersected_prog(context, dev, is_mesh_self_intersected_src);
 
 			cl_int vrt_size = sizeof(mesh->vertexes[0]) / sizeof(float);
-			cl_uint vertexes_size = mesh->vertexes_size;
-			cl_uint indexes_size = mesh->indexes_size;
 
+			cl_uint indexes_size = mesh->indexes_size;
 			cl_uint ind_buffer_size = mesh->indexes_size * sizeof(mesh->indexes[0]);
 			cl::Buffer ind_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, ind_buffer_size);
 
+			cl_uint vertexes_size = mesh->vertexes_size;
 			cl_uint vert_buffer_size = mesh->vertexes_size * sizeof(mesh->vertexes[0]);
 			cl::Buffer vert_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vert_buffer_size);
 

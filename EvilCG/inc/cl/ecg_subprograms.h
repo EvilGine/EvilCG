@@ -44,6 +44,17 @@ namespace ecg {
 				} \n\n
 			);
 
+		const std::string get_face_func =
+			NAME_OF(
+				struct face_t get_face(__global uint32_t * indexes, uint32_t id) {
+					struct face_t result;
+					result.id0 = indexes[id * 3 + 0];
+					result.id1 = indexes[id * 3 + 1];
+					result.id2 = indexes[id * 3 + 2];
+					return  result;
+				}
+			);
+
 		const std::string is_face_null_func =
 			NAME_OF(
 				bool is_face_null(struct face_t face) { \n
@@ -86,6 +97,7 @@ namespace ecg {
 			);
 	}
 
+	const std::string define_epsilon = "\n#define EPSILON 1e-6\n";
 	const std::string typedef_uint32_t = "\ntypedef unsigned int uint32_t;\n";
 	const std::string enable_atomics_def = "\n#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n";
 
@@ -276,17 +288,6 @@ namespace ecg {
 			} \n
 		);
 
-	const std::string get_face =
-		NAME_OF(
-			struct face_t get_face(__global uint32_t* indexes, uint32_t id) {
-				struct face_t result;
-				result.id0 = indexes[id * 3 + 0];
-				result.id1 = indexes[id * 3 + 1];
-				result.id2 = indexes[id * 3 + 2];
-				return  result;
-			}
-		);
-
 	const std::string get_face_normal =
 		NAME_OF(
 			float3 get_face_normal(float3 s0, float3 s1, float3 s2) { \n
@@ -294,25 +295,93 @@ namespace ecg {
 			} \n\n
 		);
 
-	const std::string does_line_intersect_face =
+	const std::string is_point_in_triangle_func =
 		NAME_OF(
-			bool does_line_intersect_face( \n
-				float3 line_start, float3 line_end, \n
-				float3 tri_v0, float3 tri_v1, float3 tri_v2 \n
-			) { \n
-				float3 tri_normal = get_face_normal(tri_v0, tri_v1, tri_v2); \n
-				float3 tri_center = (tri_v0 + tri_v1 + tri_v2) / 3; \n
-				float3 line_dir = line_end - line_start; \n
+			bool is_point_in_triangle(float3 P, float3 S0, float3 S1, float3 S2) {
+				float3 v0 = S1 - S0;
+				float3 v1 = S2 - S0;
+				float3 v2 = P - S0;
 
-				float plane_offset = dot(tri_normal, tri_center); \n
-				float dist_to_plane = plane_offset - dot(tri_normal, line_start); \n
+				float d00 = dot(v0, v0); float d01 = dot(v0, v1);
+				float d11 = dot(v1, v1); float d20 = dot(v2, v0);
+				float d21 = dot(v2, v1);
 
-				float normal_dot_dir = dot(tri_normal, line_dir); \n
-				if (fabs(normal_dot_dir) < 1e-6) return false \n;
+				float denom = d00 * d11 - d01 * d01;
+				if (denom == 0.0f) return false;
 
-				float t = -dist_to_plane / normal_dot_dir; \n
-				return (t >= 0 && t <= 1); \n
-			} \n
+				float v = (d11 * d20 - d01 * d21) / denom;
+				float w = (d00 * d21 - d01 * d20) / denom;
+				float u = 1.0f - v - w;
+
+				return (u >= 0.0f && v >= 0.0f && w >= 0.0f);
+			}
+		);
+
+	const std::string get_intersection_point_func =
+		NAME_OF(
+			bool get_intersection_point(
+				float3 p0, float3 p1, float3 s0, float3 s1, float3 s2,
+				float3 * intersection_point, float* t_parameter) {
+				bool is_intersected = false;
+				float t_param = -1.0f;
+				float3 pi_point;
+
+				float3 line_dir = p1 - p0;
+				float3 surf_norm = get_face_normal(s0, s1, s2);
+				float denom = dot(surf_norm, line_dir);
+				float d = -dot(surf_norm, s0);
+
+				if (denom == 0.0f) {
+					if (dot(surf_norm, p0) + d == 0 && dot(surf_norm, p1) + d == 0) {
+						if (is_point_in_triangle(p0, s0, s1, s2)) {
+							is_intersected = true;
+							pi_point = p0;
+						}
+						else if (is_point_in_triangle(p1, s0, s1, s2)) {
+							is_intersected = true;
+							pi_point = p1;
+						}
+						else {
+							is_intersected = true;
+							pi_point = (p0 + p1) / 2.0f;
+						}
+					}
+					else {
+						return false;
+					}
+				}
+				else {
+					t_param = -(d + dot(surf_norm, p0)) / denom;
+					pi_point = p0 + line_dir * t_param;
+					is_intersected = is_point_in_triangle(pi_point, s0, s1, s2);
+				}
+
+				if (t_parameter != NULL)
+					*t_parameter = t_param;
+				if (intersection_point != NULL && is_intersected)
+					*intersection_point = pi_point;
+
+				return is_intersected;
+			}
+		);
+
+	const std::string is_vertex_of_triangle_func =
+		NAME_OF(
+			bool is_vertex_of_triangle(float3 s0, float3 s1, float3 s2, float3 pt) {
+				return
+					s0.x == pt.x && s0.y == pt.y && s0.z == pt.z ||
+					s1.x == pt.x && s1.y == pt.y && s1.z == pt.z ||
+					s2.x == pt.x && s2.y == pt.y && s2.z == pt.z;
+			}
+		);
+
+	const std::string has_shared_vertex_func =
+		NAME_OF(
+			bool has_shared_vertex(const face_t & f1, const face_t & f2) {
+				return f1.id0 == f2.id0 || f1.id0 == f2.id1 || f1.id0 == f2.id2 ||
+					f1.id1 == f2.id0 || f1.id1 == f2.id1 || f1.id1 == f2.id2 ||
+					f1.id2 == f2.id0 || f1.id2 == f2.id1 || f1.id2 == f2.id2;
+			}
 		);
 
 	const std::string cross_product =
@@ -676,11 +745,10 @@ namespace ecg {
 	const std::string is_mesh_closed_name = "is_mesh_closed";
 	const std::string is_mesh_closed_code =
 		typedef_uint32_t +
-		enable_atomics_def +
 		cl_structs::face_struct +
 		cl_structs::edge_struct +
+		cl_structs::get_face_func +
 		cl_structs::is_face_contains_edge_func +
-		get_face +
 		NAME_OF(
 			__kernel void is_mesh_closed(
 				__global uint32_t* indexes, uint32_t indexes_cnt,
@@ -719,13 +787,13 @@ namespace ecg {
 		typedef_uint32_t +
 		cl_structs::face_struct +
 		cl_structs::edge_struct +
+		cl_structs::get_face_func +
 		cl_structs::init_edge_func +
 		cl_structs::init_face_func +
 		cl_structs::is_face_null_func +
 		cl_structs::is_edges_equal_func +
 		cl_structs::is_face_contains_edge_func +
 		cl_structs::is_face_contains_vertex_func +
-		get_face +
 		NAME_OF(
 			uint32_t find_next_face( \n
 				__global uint32_t * indexes, uint32_t faces_cnt, \n
@@ -865,21 +933,27 @@ namespace ecg {
 	const std::string is_mesh_self_intersected_name = "is_mesh_self_intersected";
 	const std::string is_mesh_self_intersected_code =
 		typedef_uint32_t +
-		cl_structs::face_struct +
 		cross_product +
-		get_face +
 		get_vertex +
 		get_face_normal +
-		does_line_intersect_face +
+		cl_structs::face_struct +
+		cl_structs::edge_struct +
+		cl_structs::get_face_func +
+		cl_structs::is_face_contains_edge_func +
+		cl_structs::is_face_contains_vertex_func +
+		is_vertex_of_triangle_func +
+		is_point_in_triangle_func +
+		get_intersection_point_func +
 		NAME_OF(
 			__kernel void is_mesh_self_intersected(
-				__global float3* vertexes, uint32_t vertexes_cnt,
-				__global uint32_t* indexes, uint32_t indexes_cnt,
+				__global float* vertexes, uint32_t vertexes_cnt,
+				__global uint32_t * indexes, uint32_t indexes_cnt,
 				int vrt_size, __global bool* is_self_intersected
 			) {
 				uint32_t faces_cnt = indexes_cnt / 3;
 				uint32_t face_id = get_global_id(0);
-				if (face_id > faces_cnt) return;
+				if (face_id >= faces_cnt) return;
+				if (*is_self_intersected) return;
 
 				struct face_t curr_face = get_face(indexes, face_id);
 				float3 curr_v0 = get_vertex(curr_face.id0, vertexes, vrt_size);
@@ -895,12 +969,20 @@ namespace ecg {
 					float3 v1 = get_vertex(face.id1, vertexes, vrt_size);
 					float3 v2 = get_vertex(face.id2, vertexes, vrt_size);
 
-					if (does_line_intersect_face(curr_v0, curr_v1, v0, v1, v2) ||
-						does_line_intersect_face(curr_v1, curr_v2, v0, v1, v2) ||
-						does_line_intersect_face(curr_v2, curr_v0, v0, v1, v2) ||
-						does_line_intersect_face(v0, v1, curr_v0, curr_v1, curr_v2) ||
-						does_line_intersect_face(v1, v2, curr_v0, curr_v1, curr_v2) ||
-						does_line_intersect_face(v2, v0, curr_v0, curr_v1, curr_v2)) {
+					// TODO: Add check that intersection point not shared point between faces
+					float t_param[6];
+					bool check_result[6];
+					float3 intersection_point[6];
+
+					check_result[0] = get_intersection_point(curr_v0, curr_v1, v0, v1, v2, &intersection_point[0], &t_param[0]) & !is_vertex_of_triangle(v0, v1, v2, intersection_point[0]);
+					check_result[1] = get_intersection_point(curr_v1, curr_v2, v0, v1, v2, &intersection_point[1], &t_param[1]) & !is_vertex_of_triangle(v0, v1, v2, intersection_point[1]);
+					check_result[2] = get_intersection_point(curr_v2, curr_v0, v0, v1, v2, &intersection_point[2], &t_param[2]) & !is_vertex_of_triangle(v0, v1, v2, intersection_point[2]);
+					check_result[3] = get_intersection_point(v0, v1, curr_v0, curr_v1, curr_v2, &intersection_point[3], &t_param[3]) & !is_vertex_of_triangle(v0, v1, v2, intersection_point[3]);
+					check_result[4] = get_intersection_point(v1, v2, curr_v0, curr_v1, curr_v2, &intersection_point[4], &t_param[4]) & !is_vertex_of_triangle(v0, v1, v2, intersection_point[4]);
+					check_result[5] = get_intersection_point(v2, v0, curr_v0, curr_v1, curr_v2, &intersection_point[5], &t_param[5]) & !is_vertex_of_triangle(v0, v1, v2, intersection_point[5]);
+
+					if (check_result[0] || check_result[1] || check_result[2] ||
+						check_result[3] || check_result[4] || check_result[5]) {
 						*is_self_intersected = true;
 						return;
 					}
