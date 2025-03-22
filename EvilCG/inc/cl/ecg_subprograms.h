@@ -989,6 +989,35 @@ namespace ecg {
 				}
 			}
 		);
+
+	const std::string triangulate_mesh_name = "triangulate_mesh";
+	const std::string triangulate_mesh_code =
+		typedef_uint32_t +
+		NAME_OF(
+			__kernel void triangulate_mesh(
+				__global uint32_t * old_indexes, uint32_t old_indexes_size,
+				__global uint32_t * new_indexes, uint32_t new_indexes_size,
+				uint32_t old_faces_cnt, uint32_t base_num_verts
+			) {
+				uint32_t face_id = get_global_id(0);
+				if (face_id >= old_faces_cnt) return;
+
+				uint32_t one_face_to_multiply = base_num_verts - 2;
+				uint32_t index_id = face_id * base_num_verts;
+				uint32_t new_face_id = face_id * one_face_to_multiply;
+				uint32_t basic_index = old_indexes[index_id];
+
+				for (uint32_t i = 0; i < base_num_verts - 2; ++i) {
+					uint32_t current_index = index_id + i + 1;
+
+					new_indexes[new_face_id * 3 + 0] = old_indexes[basic_index];
+					new_indexes[new_face_id * 3 + 1] = old_indexes[current_index];
+					new_indexes[new_face_id * 3 + 2] = old_indexes[current_index + 1];
+
+					++new_face_id;
+				}
+			}
+		);
 }
 
 #endif

@@ -14,6 +14,8 @@ namespace ecg {
 	struct ecg_array_t : ecg_descriptor {
 		size_t arr_size;
 		void* arr_ptr;
+
+		ecg_array_t() : arr_size(0), arr_ptr(nullptr) {}
 	};
 
 	struct vec3_base {

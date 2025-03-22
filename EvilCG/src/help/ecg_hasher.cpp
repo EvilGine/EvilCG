@@ -3,10 +3,10 @@
 
 namespace ecg {
     size_t ecg_hasher::operator()(const ecg_mem_handler& handler) const {
-        return std::hash<uint64_t>()(handler.get_memory_handler());
+        return std::hash<uint64_t>()(handler.get_descriptor());
     }
 
     bool ecg_equal::operator()(const ecg_mem_handler& lhs, const ecg_mem_handler& rhs) const {
-        return lhs.get_memory_handler() == rhs.get_memory_handler();
+        return lhs.get_descriptor() == rhs.get_descriptor();
     }
 }

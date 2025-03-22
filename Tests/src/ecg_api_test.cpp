@@ -447,8 +447,8 @@ TEST(ecg_api, is_mesh_self_intersected) {
 	auto method = ecg::self_intersection_method::BRUTEFORCE;
 	ecg::ecg_status status;
 	custom_timer_t timer;
-	bool result = false;
 	ecg::ecg_mesh_t mesh;
+	bool result = false;
 
 	timer.start();
 	result = ecg::is_mesh_self_intersected(nullptr, method, &status);
@@ -531,4 +531,55 @@ TEST(ecg_api, is_mesh_self_intersected) {
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);
 	ASSERT_TRUE(result);
+}
+
+TEST(ecg_api, triangulate_mesh) {
+	ecg::ecg_status status;
+	ecg::ecg_array_t res;
+	custom_timer_t timer;
+	ecg::ecg_mesh_t mesh;
+
+	timer.start();
+	res = ecg::triangulate_mesh(nullptr, 0, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	ASSERT_TRUE(res.arr_ptr == nullptr);
+
+	timer.start();
+	res = ecg::triangulate_mesh(&mesh, 1, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
+	ASSERT_TRUE(res.arr_ptr == nullptr);
+
+	timer.start();
+	mesh.vertexes_size = 1;
+	mesh.vertexes = (ecg::vec3_base*)(1);
+	res = ecg::triangulate_mesh(&mesh, 1, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
+	ASSERT_TRUE(res.arr_ptr == nullptr);
+
+	timer.start();
+	mesh.indexes_size = 4;
+	mesh.indexes = (uint32_t*)(1);
+	res = ecg::triangulate_mesh(&mesh, 3, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::INCORRECT_VERTEX_COUNT_IN_FACE);
+	ASSERT_TRUE(res.arr_ptr == nullptr);
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	ecg::ecg_mesh_t& not_triangulated_mesh_1 = mesh_inst.loaded_meshes_by_name["not_triangulated_mesh_1.obj"]->mesh;
+
+	timer.start();
+	res = ecg::triangulate_mesh(&not_triangulated_mesh_1, 4, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_TRUE((res.arr_size / sizeof(uint32_t)) % 3 == 0);
+	ASSERT_TRUE(res.arr_ptr != nullptr);
+	ASSERT_TRUE(res.arr_size > 0);
 }

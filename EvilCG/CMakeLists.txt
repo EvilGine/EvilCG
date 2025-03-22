@@ -27,6 +27,7 @@ set(SOURCE_FILES
 	./src/cl/ecg_host_ctrl.cpp
 	./src/cl/ecg_program.cpp
 	
+	./src/help/ecg_handler.cpp
 	./src/help/ecg_hasher.cpp
 	./src/help/ecg_memory.cpp
 	./src/help/ecg_helper.cpp
