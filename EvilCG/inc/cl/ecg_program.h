@@ -1,8 +1,8 @@
 #ifndef ECG_PROGRAM_H
 #define ECG_PROGRAM_H
 #include <CL/opencl.hpp>
+#include <ecg_api_define.h>
 #include <ecg_global.h>
-#include <api_define.h>
 
 namespace ecg {
 	template <typename T>

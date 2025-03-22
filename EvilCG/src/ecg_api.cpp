@@ -2,13 +2,15 @@
 
 #include <cl/ecg_subprograms.h>
 #include <cl/ecg_host_ctrl.h>
+#include <cl/ecg_internal.h>
 #include <cl/ecg_program.h>
 
+#include <help/ecg_memory.h>
 #include <help/ecg_helper.h>
 #include <help/ecg_geom.h>
 
 namespace ecg {
-	void default_mesh_check(const mesh_t* mesh, ecg_status_handler& op_res, ecg_status* status) {
+	void default_mesh_check(const ecg_mesh_t* mesh, ecg_status_handler& op_res, ecg_status* status) {
 		if (status != nullptr) *status = status_code::SUCCESS;
 		if (mesh == nullptr) op_res = status_code::INVALID_ARG;
 		if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
@@ -23,7 +25,70 @@ namespace ecg {
 			*status = op_res.get_status();
 	}
 
-	vec3_base get_center(const mesh_t* mesh, ecg_status* status) {
+	ecg_descriptor register_mesh_buffer(const ecg_mesh_t* mesh, ecg_status* status) {
+		auto& ctrl = ecg_host_ctrl::get_instance();
+		auto& queue = ctrl.get_cmd_queue();
+		auto& context = ctrl.get_context();
+		auto& dev = ctrl.get_device();
+
+		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
+		ecg_mem_init_info_t init_info = {};
+		ecg_status_handler op_res;
+		ecg_descriptor result;
+
+		try {
+			if (status != nullptr) *status = status_code::SUCCESS;
+			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
+			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
+			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+
+			auto ptr = std::shared_ptr<ecg_cl_internal_mesh>(new ecg_cl_internal_mesh);
+			init_info.type = ecg_memory_type::ECG_CL_INTERNAL_MESH;
+			init_info.total_bytes = sizeof(ecg_cl_internal_mesh);
+			init_info.is_array = false;
+			init_info.ptr = ptr;
+
+			size_t vertexes_buffer_size = mesh->vertexes_size * sizeof(vec3_base);
+			size_t normals_buffer_size  = mesh->normals_size  * sizeof(vec3_base);
+			size_t indexes_buffer_size  = mesh->indexes_size  * sizeof(uint32_t);
+
+			cl_int err_create_buffer = CL_SUCCESS;
+			ptr->vertexes = cl::Buffer(context, CL_MEM_READ_WRITE, vertexes_buffer_size, &err_create_buffer); op_res = err_create_buffer;
+			ptr->indexes  = cl::Buffer(context, CL_MEM_READ_WRITE, indexes_buffer_size , &err_create_buffer); op_res = err_create_buffer;
+			ptr->normals  = cl::Buffer(context, CL_MEM_READ_WRITE, normals_buffer_size , &err_create_buffer); op_res = err_create_buffer;
+
+			if (vertexes_buffer_size > 0) op_res = queue.enqueueWriteBuffer(ptr->vertexes, CL_FALSE, 0, vertexes_buffer_size, mesh->vertexes);
+			if (indexes_buffer_size  > 0) op_res = queue.enqueueWriteBuffer(ptr->indexes,  CL_FALSE, 0, indexes_buffer_size,  mesh->indexes);
+			if (normals_buffer_size  > 0) op_res = queue.enqueueWriteBuffer(ptr->normals,  CL_FALSE, 0, normals_buffer_size,  mesh->normals);
+			op_res = queue.finish();
+
+			auto handler = mem_ctrl.ecg_malloc(init_info);
+			result.descriptor_id = handler.get_memory_handler();
+		}
+		catch (...) {
+			on_exception(op_res, status);
+		}
+		
+		return result;
+	}
+
+	bool unregister_mesh_buffer(const ecg_descriptor handler, ecg_status* status) {
+		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
+		ecg_status_handler op_res;
+		bool result = false;
+
+		try {
+			if (status != nullptr) *status = status_code::SUCCESS;
+			result = mem_ctrl.ecg_free(handler.descriptor_id);
+		}
+		catch (...) {
+			on_exception(op_res, status);
+		}
+
+		return result;
+	}
+
+	vec3_base get_center(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 
 		try {
@@ -39,7 +104,7 @@ namespace ecg {
 		return vec3_base();
 	}
 
-	vec3_base summ_vertexes(const mesh_t* mesh, ecg_status* status) {
+	vec3_base summ_vertexes(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 		vec3_base result;
 
@@ -69,9 +134,9 @@ namespace ecg {
 				result.resize(work_groups);
 
 				cl_int err_create_buffer = CL_SUCCESS;
-				cl::Buffer acc_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, accumulator_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+				cl::Buffer acc_buffer  = cl::Buffer(context, CL_MEM_READ_WRITE, accumulator_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
 				cl::Buffer vert_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
-				cl::Buffer res_buffer = cl::Buffer(context, CL_MEM_WRITE_ONLY, result_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+				cl::Buffer res_buffer  = cl::Buffer(context, CL_MEM_WRITE_ONLY, result_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
 
 				cl::NDRange local = max_work_group_size;
 				cl::NDRange global = work_groups * max_work_group_size;
@@ -107,7 +172,7 @@ namespace ecg {
 		return result;
 	}
 
-	bounding_box compute_aabb(const mesh_t* mesh, ecg_status* status) {
+	bounding_box compute_aabb(const ecg_mesh_t* mesh, ecg_status* status) {
 		bounding_box result_bb = default_bb;
 		ecg_status_handler op_res;
 
@@ -149,7 +214,7 @@ namespace ecg {
 		return result_bb;
 	}
 
-	full_bounding_box compute_obb(const mesh_t* mesh, ecg_status* status) {
+	full_bounding_box compute_obb(const ecg_mesh_t* mesh, ecg_status* status) {
 		full_bounding_box result_obb;
 		ecg_status_handler op_res;
 
@@ -255,7 +320,7 @@ namespace ecg {
 		return res;
 	}
 
-	ecg_array_t find_nearest_vertices(const mesh_t* mesh, const vec3_base* point, int k, ecg_status* status) {
+	ecg_array_t find_nearest_vertices(const ecg_mesh_t* mesh, const vec3_base* point, int k, ecg_status* status) {
 		ecg_array_t result;
 		ecg_status_handler op_res;
 
@@ -271,7 +336,7 @@ namespace ecg {
 		return result;
 	}
 
-	float compute_surface_area(const mesh_t* mesh, ecg_status* status) {
+	float compute_surface_area(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 		float result = -FLT_MAX;
 
@@ -322,7 +387,7 @@ namespace ecg {
 		return result;
 	}
 
-	cmp_res compare_meshes(const mesh_t* m1, const mesh_t* m2, mat3_base* delta_transform, ecg_status* status) {
+	cmp_res compare_meshes(const ecg_mesh_t* m1, const ecg_mesh_t* m2, mat3_base* delta_transform, ecg_status* status) {
 		cmp_res result = cmp_res::UNDEFINED;
 		ecg_status_handler op_res;
 
@@ -345,7 +410,7 @@ namespace ecg {
 		return result;
 	}
 
-	mat3_base compute_covariance_matrix(const mesh_t* mesh, ecg_status* status) {
+	mat3_base compute_covariance_matrix(const ecg_mesh_t* mesh, ecg_status* status) {
 		mat3_base cov_mat = null_mat3;
 		ecg_status_handler op_res;
 
@@ -397,7 +462,7 @@ namespace ecg {
 		return cov_mat;
 	}
 
-	bool is_mesh_closed(const mesh_t* mesh, ecg_status* status) {
+	bool is_mesh_closed(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 		bool result = true;
 
@@ -442,7 +507,7 @@ namespace ecg {
 		return result;
 	}
 
-	bool is_mesh_manifold(const mesh_t* mesh, ecg_status* status) {
+	bool is_mesh_manifold(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 		bool result = false;
 
@@ -522,7 +587,7 @@ namespace ecg {
 		return result;
 	}
 
-	bool is_mesh_self_intersected(const mesh_t* mesh, self_intersection_method method, ecg_status* status) {
+	bool is_mesh_self_intersected(const ecg_mesh_t* mesh, self_intersection_method method, ecg_status* status) {
 		ecg_status_handler op_res;
 		bool result = false;
 		
@@ -575,5 +640,19 @@ namespace ecg {
 		}
 
 		return result;
+	}
+
+	ecg_array_t triangulate_mesh(const ecg_mesh_t* mesh, int base_num_vert, ecg_status* status) {
+		ecg_status_handler op_res;
+		ecg_array_t result_arr;
+
+		try {
+			
+		}
+		catch (...) {
+			on_exception(op_res, status);
+		}
+
+		return result_arr;
 	}
 }

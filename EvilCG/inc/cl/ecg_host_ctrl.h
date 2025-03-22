@@ -1,7 +1,7 @@
 #ifndef ECG_HOST_CTRL_H
 #define ECG_HOST_CTRL_H
+#include <ecg_api_define.h>
 #include <ecg_global.h>
-#include <api_define.h>
 
 namespace ecg {
 	const int default_id = -1;

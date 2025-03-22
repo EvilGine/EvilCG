@@ -21,7 +21,7 @@ void ecg_meshes::save_bb_to_obj(const ecg::bounding_box* bb, std::string obj_fil
     ecg_meshes::save_bb_to_obj(&full_bb, obj_file);
 }
 
-void ecg_meshes::save_mesh_to_obj(const ecg::mesh_t* mesh, std::string obj_file) {
+void ecg_meshes::save_mesh_to_obj(const ecg::ecg_mesh_t* mesh, std::string obj_file) {
     std::ofstream file;
     file.open(obj_file);
 
@@ -57,7 +57,7 @@ std::string ecg_meshes::to_string(const ecg::vec3_base& vec) {
     return std::to_string(vec.x) + " " + std::to_string(vec.y) + " " + std::to_string(vec.z);
 }
 
-void ecg_meshes::init_mesh(ecg::mesh_t* mesh, size_t size) {
+void ecg_meshes::init_mesh(ecg::ecg_mesh_t* mesh, size_t size) {
     if (mesh == nullptr) return;
 
     mesh->vertexes_size = mesh->normals_size = size;
@@ -84,7 +84,7 @@ void ecg_meshes::init_mesh(ecg::mesh_t* mesh, size_t size) {
     }
 }
 
-void ecg_meshes::delete_mesh(ecg::mesh_t* mesh) {
+void ecg_meshes::delete_mesh(ecg::ecg_mesh_t* mesh) {
     if (mesh == nullptr) return;
     
     delete[] mesh->vertexes;
@@ -107,7 +107,7 @@ void ecg_meshes::load_meshes(std::string path_to_meshes) {
 
         if (fl_path.extension() == ".obj" && fl_name.find("_res.obj") == std::string::npos) {
             if (fl_name.find("_test") != std::string::npos) continue;
-            ecg::mesh_t mesh = load_mesh_from_obj(fl_path.string());
+            ecg::ecg_mesh_t mesh = load_mesh_from_obj(fl_path.string());
 
             ecg_test_mesh_ptr mesh_ptr(new ecg_test_mesh{ fl_path, mesh });
             loaded_meshes_by_name[fl_name] = mesh_ptr;
@@ -179,8 +179,8 @@ void ecg_meshes::parse_face(const std::string& line, std::vector<uint32_t>& indi
     }
 }
 
-ecg::mesh_t ecg_meshes::load_mesh_from_obj(std::string filepath) {
-    ecg::mesh_t mesh;
+ecg::ecg_mesh_t ecg_meshes::load_mesh_from_obj(std::string filepath) {
+    ecg::ecg_mesh_t mesh;
     std::string line;
 
     std::ifstream file;

@@ -1,14 +1,19 @@
 #ifndef ECG_MESH_H
 #define ECG_MESH_H
+#include <ecg_api_define.h>
 #include <ecg_global.h>
-#include <api_define.h>
 
 namespace ecg {
 	constexpr float epsilon = 1e-6f;
 
-	struct ecg_array_t {
-		void* arr_ptr;
+	struct ecg_descriptor {
+		uint64_t descriptor_id;
+		ecg_descriptor() : descriptor_id(0) {}
+	};
+
+	struct ecg_array_t : ecg_descriptor {
 		size_t arr_size;
+		void* arr_ptr;
 	};
 
 	struct vec3_base {
@@ -106,7 +111,7 @@ namespace ecg {
 		vec3_base p7;
 	};
 
-	struct mesh_t {
+	struct ecg_mesh_t : ecg_descriptor {
 		vec3_base* vertexes;
 		uint32_t vertexes_size;
 
@@ -116,7 +121,7 @@ namespace ecg {
 		uint32_t* indexes;
 		uint32_t indexes_size;
 
-		mesh_t() : 
+		ecg_mesh_t() : 
 			vertexes(nullptr), vertexes_size(0),
 			indexes(nullptr), indexes_size(0),
 			normals(nullptr), normals_size(0) 

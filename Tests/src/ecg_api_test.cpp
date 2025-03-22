@@ -25,7 +25,7 @@ TEST(ecg_api, summ_vertexes) {
 	uint32_t test_counter = 0;
 	ecg::ecg_status status;
 	custom_timer_t timer;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 	
 	ecg::vec3_base gpu_result;
 	ecg::vec3_base cpu_result;
@@ -89,7 +89,7 @@ TEST(ecg_api, get_center) {
 	ecg::vec3_base result_center;
 	bool compare_result = false;
 	ecg::ecg_status status;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 	custom_timer_t timer;
 
 	timer.start();
@@ -120,7 +120,7 @@ TEST(ecg_api, compute_aabb) {
 	bool compare_result = false;
 	ecg::bounding_box result_bb;
 	ecg::ecg_status status;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 	custom_timer_t timer;
 
 	timer.start();
@@ -155,7 +155,7 @@ TEST(ecg_api, compute_obb) {
 	ecg::full_bounding_box result_bb;
 	bool compare_result = false;
 	ecg::ecg_status status;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 	custom_timer_t timer;
 
 	timer.start();
@@ -190,7 +190,7 @@ TEST(ecg_api, compute_surface_area) {
 	float result_surf_area = 0.0f;
 	bool compare_result = false;
 	ecg::ecg_status status;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 	custom_timer_t timer;
 
 	timer.start();
@@ -250,7 +250,7 @@ TEST(ecg_api, compute_covariance_matrix) {
 	bool compare_result = false;
 	ecg::mat3_base cov_matrix;
 	ecg::ecg_status status;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 	custom_timer_t timer;
 
 	timer.start();
@@ -282,7 +282,7 @@ TEST(ecg_api, is_mesh_closed) {
 	ecg::ecg_status status;
 	custom_timer_t timer;
 	bool result = false;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 
 	timer.start();
 	result = ecg::is_mesh_closed(nullptr, &status);
@@ -309,10 +309,10 @@ TEST(ecg_api, is_mesh_closed) {
 
 	// Test on simple, but real models
 	auto& mesh_inst = ecg_meshes::get_instance();
-	ecg::mesh_t true_test = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
-	ecg::mesh_t false_test = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
-	ecg::mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
-	ecg::mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
+	ecg::ecg_mesh_t true_test = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
+	ecg::ecg_mesh_t false_test = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
+	ecg::ecg_mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
+	ecg::ecg_mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
 
 	timer.start();
 	result = ecg::is_mesh_closed(&true_test, &status);
@@ -347,7 +347,7 @@ TEST(ecg_api, is_mesh_manifold) {
 	ecg::ecg_status status;
 	custom_timer_t timer;
 	bool result = false;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 
 	timer.start();
 	result = ecg::is_mesh_manifold(nullptr, &status);
@@ -384,13 +384,13 @@ TEST(ecg_api, is_mesh_manifold) {
 	ASSERT_FALSE(result);
 
 	auto& mesh_inst = ecg_meshes::get_instance();
-	ecg::mesh_t& closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
-	ecg::mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
-	ecg::mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
-	ecg::mesh_t& not_closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
-	ecg::mesh_t& self_intersected_1 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_1.obj"]->mesh;
-	ecg::mesh_t& self_intersected_2 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_2.obj"]->mesh;
-	ecg::mesh_t& sandglass_non_manifold = mesh_inst.loaded_meshes_by_name["sandglass-non-manifold.obj"]->mesh;
+	ecg::ecg_mesh_t& closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
+	ecg::ecg_mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
+	ecg::ecg_mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
+	ecg::ecg_mesh_t& not_closed_mesh = mesh_inst.loaded_meshes_by_name["is_closed_mesh-false.obj"]->mesh;
+	ecg::ecg_mesh_t& self_intersected_1 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_1.obj"]->mesh;
+	ecg::ecg_mesh_t& self_intersected_2 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_2.obj"]->mesh;
+	ecg::ecg_mesh_t& sandglass_non_manifold = mesh_inst.loaded_meshes_by_name["sandglass-non-manifold.obj"]->mesh;
 
 	timer.start();
 	result = ecg::is_mesh_manifold(&closed_mesh, &status);
@@ -448,7 +448,7 @@ TEST(ecg_api, is_mesh_self_intersected) {
 	ecg::ecg_status status;
 	custom_timer_t timer;
 	bool result = false;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 
 	timer.start();
 	result = ecg::is_mesh_self_intersected(nullptr, method, &status);
@@ -491,11 +491,11 @@ TEST(ecg_api, is_mesh_self_intersected) {
 	ASSERT_FALSE(result);
 
 	auto& mesh_inst = ecg_meshes::get_instance();
-	ecg::mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
-	ecg::mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
-	ecg::mesh_t& not_self_intersected = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
-	ecg::mesh_t& self_intersected_1 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_1.obj"]->mesh;
-	ecg::mesh_t& self_intersected_2 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_2.obj"]->mesh;
+	ecg::ecg_mesh_t& surface_1_non_manifold = mesh_inst.loaded_meshes_by_name["surface_1.obj"]->mesh;
+	ecg::ecg_mesh_t& surface_2_non_manifold = mesh_inst.loaded_meshes_by_name["surface_2.obj"]->mesh;
+	ecg::ecg_mesh_t& not_self_intersected = mesh_inst.loaded_meshes_by_name["is_closed_mesh-true.obj"]->mesh;
+	ecg::ecg_mesh_t& self_intersected_1 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_1.obj"]->mesh;
+	ecg::ecg_mesh_t& self_intersected_2 = mesh_inst.loaded_meshes_by_name["self_intersected_mesh_2.obj"]->mesh;
 
 	timer.start();
 	result = ecg::is_mesh_self_intersected(&surface_1_non_manifold, method, &status);
