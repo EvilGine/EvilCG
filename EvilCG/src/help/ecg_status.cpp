@@ -15,7 +15,7 @@ namespace ecg {
 		return *this;
 	}
 
-	bool ecg_status_handler::operator==(const status_code& code) {
+	bool ecg_status_handler::operator==(const status_code& code) const {
 		return this->m_status == code;
 	}
 

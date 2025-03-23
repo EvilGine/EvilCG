@@ -41,7 +41,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE EvilCG)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenCL::OpenCL)
 target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
 target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
-
+add_dependencies(${PROJECT_NAME} EvilCG)
 
 # Copy EvilCG.dll or EvilCG.so after build
 if (WIN32)

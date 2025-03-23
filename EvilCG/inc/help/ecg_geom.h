@@ -1,22 +1,21 @@
 #ifndef ECG_MESH_H
 #define ECG_MESH_H
+#include <ecg_api_define.h>
 #include <ecg_global.h>
-#include <api_define.h>
 
 namespace ecg {
-	const float epsilon = 1e-5f;
+	constexpr float epsilon = 1e-6f;
 
-	template <class T>
-	struct array_t {
-		T* arr_ptr;
-		uint32_t arr_sz;
+	struct ecg_descriptor {
+		uint64_t descriptor_id;
+		ecg_descriptor() : descriptor_id(0) {}
+	};
 
-		array_t() :
-			arr_ptr(nullptr),
-			arr_sz(0) {}
-	
-		array_t(void* ptr, uint32_t size) :
-			arr_ptr(ptr), arr_sz(size) {}
+	struct ecg_array_t : ecg_descriptor {
+		size_t arr_size;
+		void* arr_ptr;
+
+		ecg_array_t() : arr_size(0), arr_ptr(nullptr) {}
 	};
 
 	struct vec3_base {
@@ -53,6 +52,28 @@ namespace ecg {
 		float m20;
 		float m21;
 		float m22;
+	};
+
+	struct mat4_base {
+		float m00;
+		float m01;
+		float m02;
+		float m03;
+
+		float m10;
+		float m11;
+		float m12;
+		float m13;
+
+		float m20;
+		float m21;
+		float m22;
+		float m23;
+
+		float m30;
+		float m31;
+		float m32;
+		float m33;
 	};
 
 	/// <summary>
@@ -92,7 +113,7 @@ namespace ecg {
 		vec3_base p7;
 	};
 
-	struct mesh_t {
+	struct ecg_mesh_t : ecg_descriptor {
 		vec3_base* vertexes;
 		uint32_t vertexes_size;
 
@@ -102,7 +123,7 @@ namespace ecg {
 		uint32_t* indexes;
 		uint32_t indexes_size;
 
-		mesh_t() : 
+		ecg_mesh_t() : 
 			vertexes(nullptr), vertexes_size(0),
 			indexes(nullptr), indexes_size(0),
 			normals(nullptr), normals_size(0) 

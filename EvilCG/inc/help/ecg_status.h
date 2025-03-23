@@ -13,8 +13,11 @@ namespace ecg {
 	/// </summary>
 	enum status_code {
 		SUCCESS = 0,
+		INCORRECT_VERTEX_COUNT_IN_FACE,
+		NOT_IMPLEMENTED_EXCEPTION,
 		NOT_TRIANGULATED_MESH,
 		UNKNOWN_EXCEPTION,
+		INCORRECT_METHOD,
 		EMPTY_VERTEX_ARR,
 		EMPTY_INDEX_ARR,
 		EMPTY_NORM_ARR,
@@ -32,7 +35,7 @@ namespace ecg {
 
 		ecg_status_handler& operator=(const ecg_status_handler& rhs);
 		ecg_status_handler& operator=(const ecg_status& rhs);
-		bool operator==(const status_code& code);
+		bool operator==(const status_code& code) const;
 		ecg_status get_status() const;
 
 	private:

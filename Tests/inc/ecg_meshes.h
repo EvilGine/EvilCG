@@ -4,7 +4,7 @@
 
 struct ecg_test_mesh {
 	std::filesystem::path full_path;
-	ecg::mesh_t mesh;
+	ecg::ecg_mesh_t mesh;
 };
 
 typedef std::shared_ptr<ecg_test_mesh> ecg_test_mesh_ptr;
@@ -21,17 +21,17 @@ public:
 
 	static void save_bb_to_obj(const ecg::full_bounding_box* bb, std::string obj_file);
 	static void save_bb_to_obj(const ecg::bounding_box* bb, std::string obj_file);
-	static void save_mesh_to_obj(const ecg::mesh_t* mesh, std::string obj_file);
+	static void save_mesh_to_obj(const ecg::ecg_mesh_t* mesh, std::string obj_file);
 	static std::string to_string(const ecg::vec3_base& vec);
-	static void init_mesh(ecg::mesh_t* mesh, size_t size);
-	static void delete_mesh(ecg::mesh_t* mesh);
+	static void init_mesh(ecg::ecg_mesh_t* mesh, size_t size);
+	static void delete_mesh(ecg::ecg_mesh_t* mesh);
 
 private:
 	void parse_face(const std::string& line, std::vector<uint32_t>& indices);
 	ecg::vec3_base parse_vertex(const std::string& line);
 
 	static std::string convert_bb_to_str(const ecg::full_bounding_box* bb);
-	ecg::mesh_t load_mesh_from_obj(std::string filepath);
+	ecg::ecg_mesh_t load_mesh_from_obj(std::string filepath);
 	void internal_init();
 	ecg_meshes();
 };
