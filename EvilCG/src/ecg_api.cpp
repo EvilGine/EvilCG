@@ -413,31 +413,6 @@ namespace ecg {
 		return res;
 	}
 
-	ecg_array_t find_nearest_vertices(const ecg_mesh_t* mesh, const vec3_base* point, int k, ecg_status* status) {
-		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
-		ecg_status_handler op_res;
-		ecg_descriptor mem_desc;
-		ecg_array_t result;
-
-		try {
-			default_mesh_check(mesh, op_res, status);
-
-			auto& ctrl = ecg_host_ctrl::get_instance();
-			auto& queue = ctrl.get_cmd_queue();
-			auto& context = ctrl.get_context();
-			auto& dev = ctrl.get_device();
-
-			result = allocate_array<vec3_base>(k, ecg_memory_type::ECG_VERTEXES_ARRAY);
-		}
-		catch (...) {
-			if (mem_desc.descriptor_id != 0) 
-				mem_ctrl.ecg_mem_free(mem_desc.descriptor_id);
-			on_exception(op_res, status);
-		}
-
-		return result;
-	}
-
 	float compute_surface_area(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 		float result = -FLT_MAX;
@@ -801,5 +776,66 @@ namespace ecg {
 		}
 
 		return result_arr;
+	}
+
+	float compute_volume(const ecg_mesh_t* mesh, ecg_status* status) {
+		ecg_status_handler op_res;
+		float result_volume = -1.0f;
+
+		try {
+			default_mesh_check(mesh, op_res, status);
+			bool is_manifold = is_mesh_manifold(mesh, status);
+			if (!is_manifold) op_res = status_code::NON_MANIFOLD_MESH;
+
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			cl::Program::Sources sources = { compute_volume_code };
+			ecg_program program(context, dev, sources);
+
+			cl_uint indexes_size = mesh->indexes_size;
+			cl_uint faces_cnt = mesh->indexes_size / 3;
+			cl_uint vertexes_size = mesh->vertexes_size;
+			size_t vertexes_buffer_size = sizeof(vec3_base) * vertexes_size;
+			size_t indexes_buffer_size  = sizeof(uint32_t) * indexes_size;
+			size_t volume_buffer_size   = sizeof(uint32_t) * faces_cnt;
+
+			cl_float pattern = 0.0f;
+			cl_int err_create_buffer = CL_SUCCESS;
+			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY,  vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer indexes_buffer  = cl::Buffer(context, CL_MEM_READ_ONLY,  indexes_buffer_size , nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer volume_buffer   = cl::Buffer(context, CL_MEM_READ_WRITE, volume_buffer_size  , nullptr, &err_create_buffer); op_res = err_create_buffer;
+
+			cl::NDRange global = faces_cnt;
+			cl::NDRange local = cl::NullRange;
+
+			op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, vertexes_buffer_size, mesh->vertexes);
+			op_res = queue.enqueueWriteBuffer(indexes_buffer,  CL_FALSE, 0, indexes_buffer_size,  mesh->indexes);
+			op_res = queue.enqueueFillBuffer(volume_buffer, pattern, 0, volume_buffer_size);
+			op_res = queue.finish();
+
+			op_res = program.execute(
+				queue, compute_volume_name, global, local,
+				vertexes_buffer, vertexes_size,
+				indexes_buffer, indexes_size,
+				volume_buffer, faces_cnt 
+			);
+
+			// TODO: summ on GPU using volume_buffer
+			std::vector<float> volumes; 
+			volumes.resize(faces_cnt);
+			
+			op_res = queue.enqueueReadBuffer(volume_buffer, CL_FALSE, 0, volume_buffer_size, volumes.data());
+			queue.finish();
+
+			result_volume = std::accumulate(volumes.begin(), volumes.end(), 0.0f);
+		}
+		catch (...) {
+			on_exception(op_res, status);
+		}
+
+		return result_volume;
 	}
 }

@@ -583,3 +583,52 @@ TEST(ecg_api, triangulate_mesh) {
 	ASSERT_TRUE(res.arr_ptr != nullptr);
 	ASSERT_TRUE(res.arr_size > 0);
 }
+
+TEST(ecg_api, compute_volume) {
+	constexpr float epsilon = std::numeric_limits<float>::epsilon();
+	ecg::ecg_status status;
+	custom_timer_t timer;
+	ecg::ecg_mesh_t mesh;
+	float res;
+
+	timer.start();
+	res = ecg::compute_volume(nullptr, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	ASSERT_TRUE(res == -1.0f);
+
+	timer.start();
+	res = ecg::compute_volume(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	ASSERT_TRUE(res == -1.0f);
+
+	timer.start();
+	mesh.vertexes_size = 1;
+	mesh.vertexes = (ecg::vec3_base*)(1);
+	res = ecg::compute_volume(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
+	ASSERT_TRUE(res == -1.0f);
+
+	timer.start();
+	mesh.indexes_size = 4;
+	mesh.indexes = (uint32_t*)(1);
+	res = ecg::compute_volume(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::NOT_TRIANGULATED_MESH);
+	ASSERT_TRUE(res == -1.0f);
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	ecg::ecg_mesh_t& default_cube = mesh_inst.loaded_meshes_by_name["default_cube.obj"]->mesh;
+
+	timer.start();
+	res = ecg::compute_volume(&default_cube, &status);
+	timer.end();
+
+	ASSERT_TRUE((res - 8.0f) <= epsilon);
+}

@@ -1018,6 +1018,45 @@ namespace ecg {
 				}
 			}
 		);
+
+	const std::string compute_volume_name = "compute_volume";
+	const std::string compute_volume_code =
+		typedef_uint32_t +
+		cl_structs::face_struct +
+		cl_structs::get_face_func +
+		cross_product +
+		get_face_normal +
+		get_vert_len +
+		get_vertex +
+		NAME_OF(
+			__kernel void compute_volume(
+				__global float* vertexes, uint32_t vertexes_size,
+				__global uint32_t* indexes, uint32_t indexes_size,
+				__global float* volumes, uint32_t faces_cnt
+			) {
+				uint32_t id = get_global_id(0);
+				if (id >= faces_cnt) return;
+			
+				struct face_t face = get_face(indexes, id);
+				float3 v0 = get_vertex(face.id0, vertexes, 3);
+				float3 v1 = get_vertex(face.id1, vertexes, 3);
+				float3 v2 = get_vertex(face.id2, vertexes, 3);
+				float3 norm = get_face_normal(v0, v1, v2);
+
+				float3 center = (v0 + v1 + v2) / 3.0f;
+				float3 default_pt = (float3)( 0.0f, 0.0f, 0.0f );
+
+				float3 AB = v1 - v0;
+				float3 AC = v2 - v0;
+
+				float3 temp = cross_product(AB, AC);
+				float surf_area = get_len_fl3(temp) / 2.0f;
+
+				float3 OG = center - default_pt;
+				float sign = dot(OG, norm) > 0.0f ? 1.0f : -1.0f;
+				volumes[id] = (1.0f / 3.0f) * surf_area * sign;
+			}
+		);
 }
 
 #endif

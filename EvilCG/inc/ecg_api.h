@@ -35,14 +35,14 @@ namespace ecg {
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <returns></returns>
-	ecg_descriptor register_mesh_buffer(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
+	ECG_API ecg_descriptor register_mesh_buffer(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 	
 	/// <summary>
 	/// 
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <returns></returns>
-	bool unregister_descriptor(const ecg_descriptor mesh, ecg_status* status = nullptr);
+	ECG_API bool unregister_descriptor(const ecg_descriptor mesh, ecg_status* status = nullptr);
 
 	/// <summary>
 	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
@@ -198,14 +198,8 @@ namespace ecg {
 	/// 
 	/// </summary>
 	/// <param name="mesh"></param>
-	/// <param name="point"></param>
-	/// <param name="k"></param>
 	/// <param name="status"></param>
 	/// <returns></returns>
-	ECG_API ecg_array_t find_nearest_vertices(const ecg_mesh_t* mesh, const vec3_base* point, int k, ecg_status* status = nullptr);
-	ECG_API ecg_array_t find_nearest_vertices_by_desc(const ecg_descriptor desc, const vec3_base* point, int k, ecg_status* status = nullptr); // TODO: implement later
-
-	// [+] Should be added next
 	ECG_API float compute_volume(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 	ECG_API float compute_volume_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr);
 
@@ -213,6 +207,7 @@ namespace ecg {
 	ECG_API ecg_mesh_t* smooth_mesh(const ecg_mesh_t* mesh, float lambda, int iterations, ecg_status* status = nullptr);
 	ECG_API ecg_mesh_t* simplify_mesh(const ecg_mesh_t* mesh, float reduction_factor, ecg_status* status = nullptr);
 	ECG_API ecg_array_t compute_vertex_normals(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
+	ECG_API ecg_array_t compute_faces_normals(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 }
 
 #endif
