@@ -18,7 +18,7 @@ namespace ecg {
 	enum class ecg_memory_type {
 		ECG_INDEXES_ARRAY,
 		ECG_NORMALS_ARRAY,
-		ECG_VERTEXES_ARRAY,
+		ECG_VECTORS_ARRAY,
 		ECG_CL_INTERNAL_MESH,
 	};
 

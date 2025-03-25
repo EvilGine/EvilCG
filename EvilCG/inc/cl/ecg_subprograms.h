@@ -1057,6 +1057,33 @@ namespace ecg {
 				volumes[id] = (1.0f / 3.0f) * surf_area * sign;
 			}
 		);
+
+	const std::string compute_faces_normals_name = "compute_faces_normals";
+	const std::string compute_faces_normals_code =
+		typedef_uint32_t +
+		cl_structs::face_struct +
+		cl_structs::get_face_func +
+		cross_product +
+		get_face_normal +
+		get_vert_len +
+		get_vertex +
+		NAME_OF(
+			__kernel void compute_faces_normals(
+				__global float* vertexes, uint32_t vertexes_size,
+				__global uint32_t * indexes, uint32_t indexes_size,
+				__global float3* normals, uint32_t faces_cnt
+			) {
+				uint32_t id = get_global_id(0);
+				if (id >= faces_cnt) return;
+
+				struct face_t face = get_face(indexes, id);
+				float3 v0 = get_vertex(face.id0, vertexes, 3);
+				float3 v1 = get_vertex(face.id1, vertexes, 3);
+				float3 v2 = get_vertex(face.id2, vertexes, 3);
+				float3 norm = get_face_normal(v0, v1, v2);
+				normals[id] = norm;
+			}
+		);
 }
 
 #endif

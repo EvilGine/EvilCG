@@ -56,7 +56,7 @@ namespace ecg {
 		if (internal_mesh.indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
 	}
 
-	void on_exception(ecg_status_handler& op_res, ecg_status* status) {
+	void on_unknown_exception(ecg_status_handler& op_res, ecg_status* status) {
 		if (op_res == status_code::SUCCESS)
 			op_res = status_code::UNKNOWN_EXCEPTION;
 		if (status != nullptr)
@@ -108,23 +108,24 @@ namespace ecg {
 			result.descriptor_id = handler.get_descriptor();
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 		
 		return result;
 	}
 
-	bool unregister_descriptor(const ecg_descriptor handler, ecg_status* status) {
+	bool unregister_descriptor(const ecg_descriptor* const handler, ecg_status* status) {
 		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
 		ecg_status_handler op_res;
 		bool result = false;
 
 		try {
+			if (handler->descriptor_id == 0) return false;
 			if (status != nullptr) *status = status_code::SUCCESS;
-			result = mem_ctrl.ecg_mem_free(handler.descriptor_id);
+			result = mem_ctrl.ecg_mem_free(handler->descriptor_id);
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -140,7 +141,7 @@ namespace ecg {
 			return acc / mesh->vertexes_size;
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return vec3_base();
@@ -208,7 +209,7 @@ namespace ecg {
 			result = acc_vector[0];
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -263,7 +264,7 @@ namespace ecg {
 			);
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result_bb;
@@ -301,7 +302,7 @@ namespace ecg {
 			);
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result_bb;
@@ -391,7 +392,7 @@ namespace ecg {
 			result_obb.p7 = center + transf * result_obb.p7;
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result_obb;
@@ -458,7 +459,7 @@ namespace ecg {
 			op_res = queue.finish();
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -533,7 +534,7 @@ namespace ecg {
 			op_res = queue.finish();
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return cov_mat;
@@ -578,7 +579,7 @@ namespace ecg {
 			op_res = queue.finish();
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -658,7 +659,7 @@ namespace ecg {
 			result = is_mesh_closed && all_vertexes_manifold && !is_mesh_self_intersected;
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -713,7 +714,7 @@ namespace ecg {
 			}
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -721,7 +722,7 @@ namespace ecg {
 
 	ecg_array_t triangulate_mesh(const ecg_mesh_t* mesh, int base_num_vert, ecg_status* status) {
 		ecg_status_handler op_res;
-		ecg_array_t result_arr;
+		ecg_array_t result_indexes;
 
 		try {
 			if (status != nullptr) *status = status_code::SUCCESS;
@@ -767,15 +768,18 @@ namespace ecg {
 				old_faces_cnt, curr_vertexes_in_face
 			);
 
-			result_arr = allocate_array<uint32_t>(new_indexes_size, ecg_memory_type::ECG_INDEXES_ARRAY);
-			op_res = queue.enqueueReadBuffer(new_indexes_buffer, CL_FALSE, 0, new_indexes_buffer_size, result_arr.arr_ptr);
+			result_indexes = allocate_array<uint32_t>(new_indexes_size, ecg_memory_type::ECG_INDEXES_ARRAY);
+			op_res = queue.enqueueReadBuffer(new_indexes_buffer, CL_FALSE, 0, new_indexes_buffer_size, result_indexes.arr_ptr);
 			op_res = queue.finish();
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
+			if (result_indexes.descriptor_id != 0) {
+				unregister_descriptor(&result_indexes, status);
+			}
 		}
 
-		return result_arr;
+		return result_indexes;
 	}
 
 	float compute_volume(const ecg_mesh_t* mesh, ecg_status* status) {
@@ -833,9 +837,65 @@ namespace ecg {
 			result_volume = std::accumulate(volumes.begin(), volumes.end(), 0.0f);
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result_volume;
+	}
+
+	ecg_array_t compute_faces_normals(const ecg_mesh_t* mesh, ecg_status* status) {
+		ecg_array_t result_normals;
+		ecg_status_handler op_res;
+
+		try {
+			default_mesh_check(mesh, op_res, status);
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			cl::Program::Sources sources = { compute_faces_normals_code };
+			ecg_program program(context, dev, sources);
+
+			cl_uint indexes_size = mesh->indexes_size;
+			cl_uint faces_cnt = mesh->indexes_size / 3;
+			cl_uint vertexes_size = mesh->vertexes_size;
+			size_t vertexes_buffer_size = sizeof(vec3_base) * vertexes_size;
+			size_t indexes_buffer_size = sizeof(uint32_t) * indexes_size;
+			size_t normals_buffer_size = sizeof(vec3_base) * faces_cnt;
+
+			cl_float pattern = 0.0f;
+			cl_int err_create_buffer = CL_SUCCESS;
+			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer indexes_buffer  = cl::Buffer(context, CL_MEM_READ_ONLY, indexes_buffer_size,  nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer normals_buffer  = cl::Buffer(context, CL_MEM_READ_WRITE, normals_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+
+			cl::NDRange global = faces_cnt;
+			cl::NDRange local = cl::NullRange;
+
+			op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, vertexes_buffer_size, mesh->vertexes);
+			op_res = queue.enqueueWriteBuffer(indexes_buffer, CL_FALSE, 0, indexes_buffer_size, mesh->indexes);
+			op_res = queue.enqueueFillBuffer(normals_buffer, pattern, 0, normals_buffer_size);
+			op_res = queue.finish();
+
+			op_res = program.execute(
+				queue, compute_faces_normals_name, global, local,
+				vertexes_buffer, vertexes_size,
+				indexes_buffer, indexes_size,
+				normals_buffer, faces_cnt
+			);
+
+			result_normals = allocate_array<vec3_base>(faces_cnt, ecg_memory_type::ECG_VECTORS_ARRAY);
+			op_res = queue.enqueueReadBuffer(normals_buffer, CL_FALSE, 0, normals_buffer_size, result_normals.arr_ptr);
+			op_res = queue.finish();
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+			if (result_normals.descriptor_id != 0) {
+				unregister_descriptor(&result_normals, status);
+			}
+		}
+
+		return result_normals;
 	}
 }
