@@ -45,6 +45,12 @@ namespace ecg {
 	ECG_API bool unregister_descriptor(const ecg_descriptor* const desc, ecg_status* status = nullptr);
 
 	/// <summary>
+	/// 
+	/// </summary>
+	/// <returns></returns>
+	ECG_API bool unregister_all_descriptors();
+
+	/// <summary>
 	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
 	/// The AABB is a box aligned with the coordinate axes that encloses the mesh, providing 
 	/// the minimum and maximum points in each axis direction.
@@ -88,7 +94,7 @@ namespace ecg {
 	/// <param name="status">Optional pointer to an ecg_status variable that will hold the status of the function execution. 
 	/// The status will indicate success or describe any errors encountered during computation.</param>
 	/// <returns>A vec3_base vector that contains the summed vertex positions of the mesh.</returns>
-	ECG_API vec3_base summ_vertexes(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
+	ECG_API vec3_base sum_vertexes(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 
 	/// <summary>
 	/// Calculates the geometric center (centroid) of a 3D mesh. 
@@ -211,10 +217,17 @@ namespace ecg {
 	/// <returns></returns>
 	ECG_API ecg_array_t compute_faces_normals(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="mesh"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
+	ECG_API ecg_array_t compute_vertex_normals(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
+	
 	// [-] Not implemented
 	ECG_API ecg_mesh_t* simplify_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	ECG_API ecg_mesh_t* smooth_mesh(const ecg_mesh_t* mesh, float lambda, int iterations, ecg_status* status = nullptr);
-	ECG_API ecg_array_t compute_vertex_normals(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
+	ECG_API ecg_mesh_t* smooth_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 }
 
 #endif

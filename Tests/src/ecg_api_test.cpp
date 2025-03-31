@@ -31,7 +31,7 @@ TEST(ecg_api, summ_vertexes) {
 	ecg::vec3_base cpu_result;
 
 	timer.start();
-	gpu_result = ecg::summ_vertexes(nullptr, &status);
+	gpu_result = ecg::sum_vertexes(nullptr, &status);
 	compare_result = ecg::compare_vec3_base(gpu_result, ecg::vec3_base());
 	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
 	ASSERT_TRUE(compare_result);
@@ -42,7 +42,7 @@ TEST(ecg_api, summ_vertexes) {
 #endif
 
 	timer.start();
-	gpu_result = ecg::summ_vertexes(&mesh, &status);
+	gpu_result = ecg::sum_vertexes(&mesh, &status);
 	compare_result = ecg::compare_vec3_base(gpu_result, ecg::vec3_base());
 	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
 	ASSERT_TRUE(compare_result);
@@ -64,7 +64,7 @@ TEST(ecg_api, summ_vertexes) {
 		constexpr size_t vec_size = sizeof(ecg::vec3_base) / sizeof(float);
 		for (auto& item : meshes) {
 			timer.start();
-			gpu_result = ecg::summ_vertexes(&item->mesh, &status);
+			gpu_result = ecg::sum_vertexes(&item->mesh, &status);
 			cpu_result = cpu_check(item->mesh.vertexes, item->mesh.vertexes_size);
 			compare_result = ecg::compare_vec3_base(gpu_result, cpu_result);
 			timer.end();
@@ -682,8 +682,61 @@ TEST(ecg_api, compute_faces_normals) {
 
 	ASSERT_EQ(status, ecg::status_code::SUCCESS);
 	ASSERT_TRUE((res.arr_size / sizeof(uint32_t)) % 3 == 0);
+	ASSERT_TRUE(res.arr_size == sizeof(ecg::vec3_base) * default_cube.indexes_size / 3);
 	ASSERT_TRUE(res.arr_ptr != nullptr);
-	ASSERT_TRUE(res.arr_size > 0);
+
+	ecg::unregister_descriptor(&res, &status);
+}
+
+TEST(ecg_api, compute_vertex_normals) {
+	ecg::ecg_status status;
+	ecg::ecg_array_t res;
+	custom_timer_t timer;
+	ecg::ecg_mesh_t mesh;
+
+	timer.start();
+	res = ecg::compute_vertex_normals(nullptr, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::INVALID_ARG);
+	ASSERT_TRUE(res.arr_ptr == nullptr);
+
+	timer.start();
+	res = ecg::compute_vertex_normals(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_VERTEX_ARR);
+	ASSERT_TRUE(res.arr_ptr == nullptr);
+
+	timer.start();
+	mesh.vertexes_size = 1;
+	mesh.vertexes = (ecg::vec3_base*)(1);
+	res = ecg::compute_vertex_normals(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::EMPTY_INDEX_ARR);
+	ASSERT_TRUE(res.arr_ptr == nullptr);
+
+	timer.start();
+	mesh.indexes_size = 4;
+	mesh.indexes = (uint32_t*)(1);
+	res = ecg::compute_vertex_normals(&mesh, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::NOT_TRIANGULATED_MESH);
+	ASSERT_TRUE(res.arr_ptr == nullptr);
+
+	auto& mesh_inst = ecg_meshes::get_instance();
+	ecg::ecg_mesh_t& default_cube = mesh_inst.loaded_meshes_by_name["default_cube.obj"]->mesh;
+
+	timer.start();
+	res = ecg::compute_vertex_normals(&default_cube, &status);
+	timer.end();
+
+	ASSERT_EQ(status, ecg::status_code::SUCCESS);
+	ASSERT_TRUE((res.arr_size / sizeof(uint32_t)) % 3 == 0);
+	ASSERT_TRUE(res.arr_size == sizeof(ecg::vec3_base) * default_cube.vertexes_size);
+	ASSERT_TRUE(res.arr_ptr != nullptr);
 
 	ecg::unregister_descriptor(&res, &status);
 }

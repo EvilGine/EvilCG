@@ -131,12 +131,17 @@ namespace ecg {
 		return result;
 	}
 
+	bool unregister_all_descriptors() {
+		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
+		return mem_ctrl.ecg_mem_free_all();
+	}
+
 	vec3_base get_center(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 
 		try {
 			default_mesh_check(mesh, op_res, status);
-			vec3_base acc = summ_vertexes(mesh, status); 
+			vec3_base acc = sum_vertexes(mesh, status); 
 			if (status != nullptr) op_res = *status;
 			return acc / mesh->vertexes_size;
 		}
@@ -147,7 +152,7 @@ namespace ecg {
 		return vec3_base();
 	}
 
-	vec3_base summ_vertexes(const ecg_mesh_t* mesh, ecg_status* status) {
+	vec3_base sum_vertexes(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 		vec3_base result;
 
@@ -897,5 +902,60 @@ namespace ecg {
 		}
 
 		return result_normals;
+	}
+
+	ecg_array_t compute_vertex_normals(const ecg_mesh_t* mesh, ecg_status* status) {
+		ecg_status_handler op_res;
+		ecg_array_t result;
+
+		try {
+			default_mesh_check(mesh, op_res, status);
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			cl::Program::Sources sources = { compute_vertex_normals_code };
+			ecg_program program(context, dev, sources);
+
+			cl_uint indexes_size = mesh->indexes_size;
+			cl_uint vertexes_size = mesh->vertexes_size;
+			size_t indexes_buffer_size = sizeof(uint32_t) * indexes_size;
+			size_t vertexes_buffer_size = sizeof(vec3_base) * vertexes_size;
+
+			cl_float pattern = 0.0f;
+			cl_int err_create_buffer = CL_SUCCESS;
+			cl_int vrt_size = sizeof(vec3_base) / sizeof(float);
+			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer normals_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer indexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, indexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+
+			cl::NDRange global = mesh->vertexes_size;
+			cl::NDRange local = cl::NullRange;
+
+			op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, vertexes_buffer_size, mesh->vertexes);
+			op_res = queue.enqueueWriteBuffer(indexes_buffer, CL_FALSE, 0, indexes_buffer_size, mesh->indexes);
+			op_res = queue.enqueueFillBuffer(normals_buffer, pattern, 0, vertexes_buffer_size);
+			op_res = queue.finish();
+
+			op_res = program.execute(
+				queue, compute_vertex_normals_name, global, local,
+				vertexes_buffer, vertexes_size,
+				indexes_buffer, indexes_size,
+				vrt_size, normals_buffer
+			);
+
+			result = allocate_array<vec3_base>(mesh->vertexes_size, ecg_memory_type::ECG_VECTORS_ARRAY);
+			op_res = queue.enqueueReadBuffer(normals_buffer, CL_FALSE, 0, vertexes_buffer_size, result.arr_ptr);
+			op_res = queue.finish();
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+			if (result.descriptor_id != 0) {
+				unregister_descriptor(&result, status);
+			}
+		}
+
+		return result;
 	}
 }

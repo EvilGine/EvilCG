@@ -40,4 +40,9 @@ namespace ecg {
 
 		return false;
 	}
+
+	bool ecg_mem_ctrl::ecg_mem_free_all() {
+		m_allocated_objects.clear();
+		return true;
+	}
 }

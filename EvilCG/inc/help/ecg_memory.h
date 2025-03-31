@@ -19,6 +19,7 @@ namespace ecg {
 		ecg_mem_handler ecg_mem_register(const ecg_mem_init_info_t& init_info);
 		bool ecg_mem_free(const ecg_mem_handler& handler);
 		bool ecg_mem_free(uint64_t handler_id);
+		bool ecg_mem_free_all();
 
 	protected:
 		std::unordered_map<uint64_t, ecg_mem_handler> m_allocated_objects;

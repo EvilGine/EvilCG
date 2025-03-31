@@ -969,7 +969,6 @@ namespace ecg {
 					float3 v1 = get_vertex(face.id1, vertexes, vrt_size);
 					float3 v2 = get_vertex(face.id2, vertexes, vrt_size);
 
-					// TODO: Add check that intersection point not shared point between faces
 					float t_param[6];
 					bool check_result[6];
 					float3 intersection_point[6];
@@ -1080,8 +1079,50 @@ namespace ecg {
 				float3 v0 = get_vertex(face.id0, vertexes, 3);
 				float3 v1 = get_vertex(face.id1, vertexes, 3);
 				float3 v2 = get_vertex(face.id2, vertexes, 3);
-				float3 norm = get_face_normal(v0, v1, v2);
+				float3 norm = normalize(get_face_normal(v0, v1, v2));
 				normals[id] = norm;
+			}
+		);
+
+	const std::string compute_vertex_normals_name = "compute_vertex_normals";
+	const std::string compute_vertex_normals_code =
+		cross_product +
+		typedef_uint32_t +
+		cl_structs::face_struct +
+		cl_structs::get_face_func +
+		get_face_normal +
+		get_vertex +
+		NAME_OF(
+			__kernel void compute_vertex_normals(
+				__global float3* vertexes, uint32_t vertexes_size,
+				__global uint32_t* indexes, uint32_t indexes_size,
+				int vrt_size, __global float3* result
+			) {
+				uint32_t vrt_id = get_global_id(0);
+				if (vrt_id >= vertexes_size) return;
+
+				uint32_t num_of_vertexes = 0;
+				result[vrt_id] = (float3)(0.0f, 0.0f, 0.0f);
+				float3 vertex = get_vertex(vrt_id, vertexes, vrt_size);
+
+				for (uint32_t face_id = 0; face_id < indexes_size / 3; ++face_id) {
+					struct face_t face = get_face(indexes, face_id);
+					float3 v0 = get_vertex(face.id0, vertexes, vrt_size);
+					float3 v1 = get_vertex(face.id1, vertexes, vrt_size);
+					float3 v2 = get_vertex(face.id2, vertexes, vrt_size);
+
+					if (face.id0 == vrt_id || face.id1 == vrt_id || face.id2 == vrt_id) {
+						result[vrt_id] += normalize(get_face_normal(v0, v1, v2));
+						++num_of_vertexes;
+					}
+				}
+
+				if (num_of_vertexes != 0) {
+					result[vrt_id] = result[vrt_id] / num_of_vertexes;
+				}
+				else {
+					result[vrt_id] = (float3)(0.0f, 0.0f, 0.0f);
+				}
 			}
 		);
 }
