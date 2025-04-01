@@ -1,6 +1,6 @@
 #ifndef ECG_INTERNAL_H
 #define ECG_INTERNAL_H
-#include <cl/ecg_host_ctrl.h>
+#include <core/ecg_host_ctrl.h>
 #include <ecg_global.h>
 
 namespace ecg {

@@ -443,8 +443,8 @@ TEST(ecg_api, is_mesh_manifold) {
 }
 
 TEST(ecg_api, is_mesh_self_intersected) {
-	auto invalid_method = ecg::self_intersection_method::METHODS_COUNT;
-	auto method = ecg::self_intersection_method::BRUTEFORCE;
+	auto invalid_method = ecg::self_intersection_method::SI_METHODS_COUNT;
+	auto method = ecg::self_intersection_method::SI_BRUTEFORCE;
 	ecg::ecg_status status;
 	custom_timer_t timer;
 	ecg::ecg_mesh_t mesh;

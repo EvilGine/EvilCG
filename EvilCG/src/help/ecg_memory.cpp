@@ -14,9 +14,7 @@ namespace ecg {
 
 	ecg_mem_handler ecg_mem_ctrl::get_mem_handler(uint64_t handler_id) const {
 		auto it = m_allocated_objects.find(handler_id);
-		if (it != m_allocated_objects.end()) {
-			return it->second;
-		}
+		return it != m_allocated_objects.end() ? it->second : ecg_mem_handler();
 	}
 
 	ecg_mem_handler ecg_mem_ctrl::ecg_mem_register(const ecg_mem_init_info_t& init_info) {

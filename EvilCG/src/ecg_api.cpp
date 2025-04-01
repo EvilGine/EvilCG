@@ -1,15 +1,17 @@
 #include <ecg_api.h>
 
-#include <cl/ecg_subprograms.h>
-#include <cl/ecg_host_ctrl.h>
-#include <cl/ecg_internal.h>
-#include <cl/ecg_program.h>
+#include <core/ecg_simplification.h>
+#include <core/ecg_subprograms.h>
+#include <core/ecg_host_ctrl.h>
+#include <core/ecg_internal.h>
+#include <core/ecg_program.h>
 
 #include <help/ecg_memory.h>
 #include <help/ecg_helper.h>
 #include <help/ecg_geom.h>
 
 namespace ecg {
+	// TODO: Move to another location
 	template <typename Type>
 	ecg_array_t allocate_array(int items_cnt, ecg_memory_type type) {
 		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
@@ -471,7 +473,7 @@ namespace ecg {
 	}
 
 	cmp_res compare_meshes(const ecg_mesh_t* m1, const ecg_mesh_t* m2, mat3_base* delta_transform, ecg_status* status) {
-		cmp_res result = cmp_res::UNDEFINED;
+		cmp_res result = cmp_res::CMP_UNDEFINED;
 		ecg_status_handler op_res;
 
 		try {
@@ -696,7 +698,7 @@ namespace ecg {
 
 			cl::Buffer is_self_intersected_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 
-			if (method == self_intersection_method::BRUTEFORCE) {
+			if (method == self_intersection_method::SI_BRUTEFORCE) {
 				cl::NDRange global = mesh->indexes_size / 3;
 				cl::NDRange local = cl::NullRange;
 
@@ -954,6 +956,27 @@ namespace ecg {
 			if (result.descriptor_id != 0) {
 				unregister_descriptor(&result, status);
 			}
+		}
+
+		return result;
+	}
+
+	ecg_mesh_t simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status) {
+		ecg_status_handler op_res;
+		ecg_mesh_t result;
+
+		try {
+			switch (method)
+			{
+			case ecg::SM_CENTER_POINT_SIMPLIFICATION:
+				result = center_point_simplification();
+				break;
+			default:
+				break;
+			}
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;

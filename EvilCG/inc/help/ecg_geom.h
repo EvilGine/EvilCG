@@ -116,7 +116,7 @@ namespace ecg {
 		vec3_base p7;
 	};
 
-	struct ecg_mesh_t : ecg_descriptor {
+	struct ecg_mesh_t {
 		vec3_base* vertexes;
 		uint32_t vertexes_size;
 
