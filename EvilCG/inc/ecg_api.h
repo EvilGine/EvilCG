@@ -13,7 +13,7 @@
 
 namespace ecg {	
 	/// <summary>
-	/// Compare results
+	/// Compare results between two meshes.
 	/// </summary>
 	enum cmp_res {
 		CMP_UNDEFINED = INT32_MAX,
@@ -22,7 +22,7 @@ namespace ecg {
 	};
 
 	/// <summary>
-	/// Methods for checking self-intersection of model
+	/// Methods for checking self-intersection of model.
 	/// </summary>
 	enum self_intersection_method {
 		SI_BRUTEFORCE,
@@ -31,7 +31,7 @@ namespace ecg {
 	};
 
 	/// <summary>
-	/// 
+	/// Mesh simplification methods.
 	/// </summary>
 	enum simplify_method {
 		SM_CENTER_POINT_SIMPLIFICATION,
@@ -39,21 +39,21 @@ namespace ecg {
 	};
 
 	/// <summary>
-	/// 
+	/// Registering an internal buffer for long-term operation with mesh data.
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <returns></returns>
 	ECG_API ecg_descriptor register_mesh_buffer(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 	
 	/// <summary>
-	/// 
+	/// Destroy library object by ecg_descriptor.
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <returns></returns>
 	ECG_API bool unregister_descriptor(const ecg_descriptor* const desc, ecg_status* status = nullptr);
 
 	/// <summary>
-	/// 
+	/// Destroy all allocated object in ecg library.
 	/// </summary>
 	/// <returns></returns>
 	ECG_API bool unregister_all_descriptors();
@@ -181,7 +181,7 @@ namespace ecg {
 	//ECG_API bool is_mesh_closed_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr); // TODO: implement later
 
 	/// <summary>
-	/// 
+	/// Checks that each edge of the mesh belongs to only two polygons, and that all vertexes are manifold.
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <param name="status"></param>
@@ -190,7 +190,7 @@ namespace ecg {
 	//ECG_API bool is_mesh_manifold_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr); // TODO: implement later
 
 	/// <summary>
-	/// 
+	/// Checks that the mesh contains a self-intersection.
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <param name="status"></param>
@@ -199,17 +199,17 @@ namespace ecg {
 	//ECG_API bool is_mesh_self_intersected_by_desc(const ecg_descriptor desc, self_intersection_method method, ecg_status* status = nullptr); // TODO: implement later
 
 	/// <summary>
-	/// 
+	/// Convert non-triangulated mesh into triangulated.
 	/// </summary>
 	/// <param name="mesh"></param>
-	/// <param name="base_num_vert"></param>
+	/// <param name="base_num_vert">Origin number of vertexes in face</param>
 	/// <param name="status"></param>
 	/// <returns></returns>
 	ECG_API ecg_array_t triangulate_mesh(const ecg_mesh_t* mesh, int base_num_vert, ecg_status* status = nullptr);
 	//ECG_API ecg_array_t triangulate_mesh_by_desc(const ecg_descriptor desc, int base_num_vert, ecg_status* status = nullptr); // TODO: implement later
 	
 	/// <summary>
-	/// 
+	/// Compute volume for closed mesh. Works only for closed meshes.
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <param name="status"></param>
@@ -218,7 +218,7 @@ namespace ecg {
 	//ECG_API float compute_volume_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr);
 
 	/// <summary>
-	/// 
+	/// Calculates all the normals of the faces.
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <param name="status"></param>
@@ -226,7 +226,7 @@ namespace ecg {
 	ECG_API ecg_array_t compute_faces_normals(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 
 	/// <summary>
-	/// 
+	/// Calculates all the normals of the vectors.
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <param name="status"></param>
@@ -234,7 +234,7 @@ namespace ecg {
 	ECG_API ecg_array_t compute_vertex_normals(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 	
 	/// <summary>
-	/// 
+	/// A method of creating a LOD (level-of-detail) from a mesh using various algorithms.
 	/// </summary>
 	/// <param name="mesh"></param>
 	/// <param name="status"></param>

@@ -33,6 +33,12 @@ namespace ecg {
 		ecg_memory_type type;
 		size_t total_bytes;
 		bool is_array;
+
+		ecg_mem_init_info_t() :
+			type(ecg_memory_type::NONE_MEMORY_TYPE),
+			total_bytes(0), is_array(false),
+			ptr(nullptr)
+		{ }
 	};
 
 	/// <summary>

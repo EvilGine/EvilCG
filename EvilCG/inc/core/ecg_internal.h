@@ -13,6 +13,10 @@ namespace ecg {
 
 		cl::Buffer normals;
 		size_t normals_size;
+
+		ecg_cl_internal_mesh() :
+			vertexes_size(0), indexes_size(0), normals_size(0)
+		{ }
 	};
 }
 

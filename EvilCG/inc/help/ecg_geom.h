@@ -19,7 +19,6 @@ namespace ecg {
 		ecg_array_t() : arr_size(0), arr_ptr(nullptr) {}
 	};
 
-#pragma pack(push, 4)
 	struct vec3_base {
 		float x;
 		float y;
@@ -29,7 +28,6 @@ namespace ecg {
 		vec3_base(float base) : x(base), y(base), z(base) {}
 		vec3_base(float x, float y, float z) : x(x), y(y), z(z) {}
 	};
-#pragma pack(pop)
 
 	struct vec4_base {
 		float x;
