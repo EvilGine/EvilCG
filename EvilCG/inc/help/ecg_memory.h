@@ -23,6 +23,8 @@ namespace ecg {
 
 	protected:
 		std::unordered_map<uint64_t, ecg_mem_handler> m_allocated_objects;
+		std::unordered_set<std::shared_ptr<void>> m_pointers;
+		std::mutex m_controller_mutex;
 		ecg_mem_ctrl() = default;
 	};
 }

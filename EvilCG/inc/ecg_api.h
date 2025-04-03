@@ -34,7 +34,8 @@ namespace ecg {
 	/// Mesh simplification methods.
 	/// </summary>
 	enum simplify_method {
-		SM_CENTER_POINT_SIMPLIFICATION,
+		SM_QEM,
+		SM_CENTER_POINT,
 		SM_METHODS_COUNT,
 	};
 
@@ -139,8 +140,8 @@ namespace ecg {
 	/// <returns>
 	/// Return enum value that indicates result of comparison.
 	/// </returns>
-	ECG_API cmp_res compare_meshes(const ecg_mesh_t* m1, const ecg_mesh_t* m2, mat3_base* delta_transform = nullptr, ecg_status* status = nullptr);
-	//ECG_API cmp_res compare_meshes_by_desc(const ecg_descriptor desc, const ecg_mesh_t* m2, mat3_base* delta_transform = nullptr, ecg_status* status = nullptr); // TODO: implement later
+	//ECG_API cmp_res compare_meshes(const ecg_mesh_t* m1, const ecg_mesh_t* m2, mat3_base* delta_transform = nullptr, ecg_status* status = nullptr); // TODO: Implement later
+	//ECG_API cmp_res compare_meshes_by_desc(const ecg_descriptor desc, const ecg_mesh_t* m2, mat3_base* delta_transform = nullptr, ecg_status* status = nullptr); // TODO: Implement later
 
 	/// <summary>
 	/// Computes the covariance matrix for a given mesh, representing the variance and covariance 
@@ -239,10 +240,10 @@ namespace ecg {
 	/// <param name="mesh"></param>
 	/// <param name="status"></param>
 	/// <returns></returns>
-	ECG_API ecg_mesh_t simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status = nullptr);
+	ECG_API ecg_internal_mesh simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status = nullptr);
 
 	// [-] Not implemented
-	ECG_API ecg_mesh_t smooth_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
+	//ECG_API ecg_internal_mesh smooth_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 }
 
 #endif

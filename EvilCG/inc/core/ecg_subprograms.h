@@ -55,6 +55,22 @@ namespace ecg {
 				}
 			);
 
+		const std::string faces_has_shared_edge_func =
+			NAME_OF(
+				bool faces_has_shared_edge(struct face_t f1, struct face_t f2) {
+					return 
+						(f1.id0 == temp_face.id0 && f2.id1 == temp_face.id1) ||
+						(f1.id0 == temp_face.id1 && f2.id1 == temp_face.id2) ||
+						(f1.id0 == temp_face.id2 && f2.id1 == temp_face.id0) ||
+						(f1.id1 == temp_face.id0 && f2.id2 == temp_face.id1) ||
+						(f1.id1 == temp_face.id1 && f2.id2 == temp_face.id2) ||
+						(f1.id1 == temp_face.id2 && f2.id2 == temp_face.id0) ||
+						(f1.id2 == temp_face.id0 && f2.id0 == temp_face.id1) ||
+						(f1.id2 == temp_face.id1 && f2.id0 == temp_face.id2) ||
+						(f1.id2 == temp_face.id2 && f2.id0 == temp_face.id0);
+				}
+			);
+
 		const std::string is_face_null_func =
 			NAME_OF(
 				bool is_face_null(struct face_t face) { \n
@@ -1122,6 +1138,46 @@ namespace ecg {
 				}
 				else {
 					result[vrt_id] = (float3)(0.0f, 0.0f, 0.0f);
+				}
+			}
+		);
+
+	const std::string center_point_simplification_name = "center_point_simplification";
+	const std::string center_point_simplification_code =
+		typedef_uint32_t +
+		cl_structs::face_struct +
+		cl_structs::get_face_func +
+		cl_structs::faces_has_shared_edge_func +
+		get_vertex +
+		NAME_OF(
+			__kernel void center_point_simplification(
+				__global float3* vertexes, uint32_t vertexes_size,
+				__global uint32_t* indexes, uint32_t indexes_size,
+				__global float3* result_vertexes, uint32_t result_vertexes_size,
+				__global uint32_t* result_indexes_size,
+				uint32_t vrt_size
+			) {
+				uint32_t face_id = get_global_id(0);
+				uint32_t faces_cnt = indexes_size / 3;
+				
+				if (face_id >= faces_cnt) return;
+				if (face_id >= result_vertexes_size) return;
+
+				struct face_t face = get_face(indexes, face_id);
+				float3 v0 = get_vertex(face.id0, vertexes, vrt_size);
+				float3 v1 = get_vertex(face.id1, vertexes, vrt_size);
+				float3 v2 = get_vertex(face.id2, vertexes, vrt_size);
+
+				result_indexes_size[face_id] = 0;
+				result_vertexes[face_id] = (v0 + v1 + v2) / 3;
+
+				for (uint32_t id = 0; id < face_cnt; ++id) {
+					if (id == face_id) continue;
+					struct face_t temp_face = get_face(indexes, id);
+
+					if (faces_has_shared_edge(temp_face, face)) {
+						result_indexes_size[face_id] += 1;
+					}
 				}
 			}
 		);

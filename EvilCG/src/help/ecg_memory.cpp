@@ -18,9 +18,16 @@ namespace ecg {
 	}
 
 	ecg_mem_handler ecg_mem_ctrl::ecg_mem_register(const ecg_mem_init_info_t& init_info) {
-		ecg_mem_handler handler; handler.init_memory(init_info);
-		uint64_t handler_id = handler.get_descriptor();
-		m_allocated_objects.try_emplace(handler_id, handler);
+		std::scoped_lock lock{ m_controller_mutex };
+		ecg_mem_handler handler; 
+		
+		if (!m_pointers.contains(init_info.ptr)) {
+			handler.init_memory(init_info);
+			m_pointers.insert(init_info.ptr);
+			uint64_t handler_id = handler.get_descriptor();
+			m_allocated_objects.try_emplace(handler_id, handler);
+		}
+		
 		return handler;
 	}
 	
@@ -30,9 +37,13 @@ namespace ecg {
 	}
 
 	bool ecg_mem_ctrl::ecg_mem_free(uint64_t handler_id) {
+		std::scoped_lock lock{ m_controller_mutex };
 		auto it = m_allocated_objects.find(handler_id);
+
 		if (it != m_allocated_objects.end()) {
+			auto ptr = it->second.get_pointer();
 			m_allocated_objects.erase(it);
+			m_pointers.erase(ptr);
 			return true;
 		}
 
@@ -40,7 +51,9 @@ namespace ecg {
 	}
 
 	bool ecg_mem_ctrl::ecg_mem_free_all() {
-		m_allocated_objects.clear();
+		std::scoped_lock lock{ m_controller_mutex };
+		std::unordered_map<uint64_t, ecg_mem_handler>().swap(m_allocated_objects);
+		std::unordered_set<std::shared_ptr<void>>().swap(m_pointers);
 		return true;
 	}
 }

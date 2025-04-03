@@ -27,8 +27,10 @@ set(SOURCE_FILES
 	./src/core/ecg_simplification.cpp
 	./src/core/ecg_host_ctrl.cpp
 	./src/core/ecg_program.cpp
-	
+
+	./src/help/ecg_allocate.cpp
 	./src/help/ecg_handler.cpp
+	./src/help/ecg_checks.cpp	
 	./src/help/ecg_hasher.cpp
 	./src/help/ecg_memory.cpp
 	./src/help/ecg_helper.cpp

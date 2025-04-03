@@ -6,65 +6,13 @@
 #include <core/ecg_internal.h>
 #include <core/ecg_program.h>
 
+#include <help/ecg_allocate.h>
+#include <help/ecg_checks.h>
 #include <help/ecg_memory.h>
 #include <help/ecg_helper.h>
 #include <help/ecg_geom.h>
 
 namespace ecg {
-	// TODO: Move to another location
-	template <typename Type>
-	ecg_array_t allocate_array(int items_cnt, ecg_memory_type type) {
-		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
-		ecg_mem_init_info_t init_info;
-		ecg_array_t result;
-
-		init_info.ptr = std::shared_ptr<Type>(new Type[items_cnt]);
-		init_info.total_bytes = sizeof(Type) * items_cnt;
-		init_info.is_array = true;
-		init_info.type = type;
-
-		ecg_mem_handler mem_handler = mem_ctrl.ecg_mem_register(init_info);
-		result.descriptor_id = mem_handler.get_descriptor();
-		result.arr_size = init_info.total_bytes;
-		result.arr_ptr = init_info.ptr.get();
-		return result;
-	}
-
-	ecg_cl_internal_mesh get_internal_mesh(const ecg_mem_ctrl& mem_ctrl, const ecg_descriptor desc) {
-		ecg_cl_internal_mesh internal_mesh;
-		auto handler = mem_ctrl.get_mem_handler(desc.descriptor_id);
-		if (handler.get_memory_type() == ecg_memory_type::ECG_CL_INTERNAL_MESH) {
-			auto ptr = handler.get_pointer();
-			internal_mesh = *static_cast<ecg_cl_internal_mesh*>(ptr.get());
-		}
-		return internal_mesh;
-	}
-
-	void default_mesh_check(const ecg_mesh_t* mesh, ecg_status_handler& op_res, ecg_status* status) {
-		if (status != nullptr) *status = status_code::SUCCESS;
-		if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-		if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
-		if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-		if (mesh->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
-	}
-
-	void default_desc_check(const ecg_mem_ctrl& mem_ctrl, const ecg_descriptor desc, ecg_status_handler& op_res, ecg_status* status) {
-		if (status != nullptr) *status = status_code::SUCCESS;
-		if (!mem_ctrl.is_contains_handler(desc.descriptor_id)) op_res = status_code::INVALID_ARG;
-		
-		ecg_cl_internal_mesh internal_mesh = get_internal_mesh(mem_ctrl, desc);
-		if (internal_mesh.indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-		if (internal_mesh.vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
-		if (internal_mesh.indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
-	}
-
-	void on_unknown_exception(ecg_status_handler& op_res, ecg_status* status) {
-		if (op_res == status_code::SUCCESS)
-			op_res = status_code::UNKNOWN_EXCEPTION;
-		if (status != nullptr)
-			*status = op_res.get_status();
-	}
-
 	ecg_descriptor register_mesh_buffer(const ecg_mesh_t* mesh, ecg_status* status) {
 		auto& ctrl = ecg_host_ctrl::get_instance();
 		auto& queue = ctrl.get_cmd_queue();
@@ -77,10 +25,10 @@ namespace ecg {
 		ecg_descriptor result;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
+			if (status != nullptr) *status = ecg_status_code::SUCCESS;
+			if (mesh == nullptr) op_res = ecg_status_code::INVALID_ARG;
+			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = ecg_status_code::EMPTY_INDEX_ARR;
+			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = ecg_status_code::EMPTY_VERTEX_ARR;
 
 			auto ptr = std::shared_ptr<ecg_cl_internal_mesh>(new ecg_cl_internal_mesh);
 			init_info.type = ecg_memory_type::ECG_CL_INTERNAL_MESH;
@@ -123,7 +71,7 @@ namespace ecg {
 
 		try {
 			if (handler->descriptor_id == 0) return false;
-			if (status != nullptr) *status = status_code::SUCCESS;
+			if (status != nullptr) *status = ecg_status_code::SUCCESS;
 			result = mem_ctrl.ecg_mem_free(handler->descriptor_id);
 		}
 		catch (...) {
@@ -285,7 +233,7 @@ namespace ecg {
 
 		try {
 			default_desc_check(mem_ctrl, desc, op_res, status);
-			ecg_cl_internal_mesh internal_mesh = get_internal_mesh(mem_ctrl, desc);
+			ecg_cl_internal_mesh internal_mesh = get_cl_internal_mesh(mem_ctrl, desc);
 
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -486,8 +434,8 @@ namespace ecg {
 			
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
+			if (op_res == ecg_status_code::SUCCESS)
+				op_res = ecg_status_code::UNKNOWN_EXCEPTION;
 			if (status != nullptr)
 				*status = op_res.get_status();
 		}
@@ -717,7 +665,7 @@ namespace ecg {
 				op_res = queue.finish();
 			}
 			else {
-				op_res = status_code::INCORRECT_METHOD;
+				op_res = ecg_status_code::INCORRECT_METHOD;
 			}
 		}
 		catch (...) {
@@ -732,10 +680,10 @@ namespace ecg {
 		ecg_array_t result_indexes;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr || base_num_vert <= 0) op_res = status_code::INVALID_ARG;
-			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-			if (mesh->indexes_size % base_num_vert != 0) op_res = status_code::INCORRECT_VERTEX_COUNT_IN_FACE;
+			if (status != nullptr) *status = ecg_status_code::SUCCESS;
+			if (mesh == nullptr || base_num_vert <= 0) op_res = ecg_status_code::INVALID_ARG;
+			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = ecg_status_code::EMPTY_INDEX_ARR;
+			if (mesh->indexes_size % base_num_vert != 0) op_res = ecg_status_code::INCORRECT_VERTEX_COUNT_IN_FACE;
 
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -796,7 +744,7 @@ namespace ecg {
 		try {
 			default_mesh_check(mesh, op_res, status);
 			bool is_manifold = is_mesh_manifold(mesh, status);
-			if (!is_manifold) op_res = status_code::NON_MANIFOLD_MESH;
+			if (!is_manifold) op_res = ecg_status_code::NON_MANIFOLD_MESH;
 
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -961,22 +909,32 @@ namespace ecg {
 		return result;
 	}
 
-	ecg_mesh_t simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status) {
+	ecg_internal_mesh simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status) {
 		ecg_status_handler op_res;
-		ecg_mesh_t result;
+		ecg_internal_mesh result;
 
 		try {
+			default_mesh_check(mesh, op_res, status);
 			switch (method)
 			{
-			case ecg::SM_CENTER_POINT_SIMPLIFICATION:
-				result = center_point_simplification();
+			case ecg::SM_CENTER_POINT: {
+				center_point_simplification(mesh, result, op_res);
 				break;
+			}
+			case ecg::SM_QEM: {
+				qem_simplification(mesh, result, op_res);
+				break;
+			}
 			default:
+				op_res = ecg_status_code::INCORRECT_METHOD;
 				break;
 			}
 		}
 		catch (...) {
 			on_unknown_exception(op_res, status);
+			if (result.descriptor_id != 0) {
+				unregister_descriptor(&result, status);
+			}
 		}
 
 		return result;

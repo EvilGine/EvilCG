@@ -8,6 +8,7 @@ namespace ecg {
 
 	struct ecg_descriptor {
 		uint64_t descriptor_id;
+
 		ecg_descriptor() : descriptor_id(0) {}
 		ecg_descriptor(uint64_t value) : descriptor_id(value) {}
 	};
@@ -114,6 +115,10 @@ namespace ecg {
 		vec3_base p7;
 	};
 
+	/// <summary>
+	/// The default representation of grid data in ecg.
+	/// Normals are optional in most cases.
+	/// </summary>
 	struct ecg_mesh_t {
 		vec3_base* vertexes;
 		uint32_t vertexes_size;
@@ -129,6 +134,11 @@ namespace ecg {
 			indexes(nullptr), indexes_size(0),
 			normals(nullptr), normals_size(0) 
 		{}
+	};
+
+	struct ecg_internal_mesh : ecg_descriptor {
+		ecg_mesh_t* internal_mesh;
+		ecg_internal_mesh() : internal_mesh(nullptr) {}
 	};
 
 	std::ostream& operator<<(std::ostream& os, const vec3_base& rhs);
