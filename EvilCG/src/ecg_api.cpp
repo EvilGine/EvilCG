@@ -7,12 +7,18 @@
 #include <core/ecg_program.h>
 
 #include <help/ecg_allocate.h>
+#include <help/ecg_logger.h>
 #include <help/ecg_checks.h>
 #include <help/ecg_memory.h>
 #include <help/ecg_helper.h>
 #include <help/ecg_geom.h>
 
 namespace ecg {
+	void init_logger(std::shared_ptr<spdlog::logger> ptr) {
+		std::scoped_lock lock(g_ecg_set_logger_mutex);
+		g_ecg_logger = ptr;
+	}
+
 	ecg_descriptor register_mesh_buffer(const ecg_mesh_t* mesh, ecg_status* status) {
 		auto& ctrl = ecg_host_ctrl::get_instance();
 		auto& queue = ctrl.get_cmd_queue();

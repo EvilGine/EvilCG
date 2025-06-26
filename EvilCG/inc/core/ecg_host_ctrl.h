@@ -6,6 +6,9 @@
 namespace ecg {
 	const int default_id = -1;
 
+	/// <summary>
+	/// Device structure.
+	/// </summary>
 	struct device_t {
 		int id;
 		size_t score;

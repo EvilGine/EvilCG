@@ -11,6 +11,10 @@
 	#include <core/ecg_program.h>
 #endif
 
+#if defined(ECG_USE_SPDLOG)
+	#include <spdlog/spdlog.h>
+#endif
+
 namespace ecg {	
 	/// <summary>
 	/// Compare results between two meshes.
@@ -39,7 +43,14 @@ namespace ecg {
 		SM_METHODS_COUNT,
 	};
 
+#if defined(ECG_USE_SPDLOG)
 	/// <summary>
+	/// Init logger for more informations
+	/// </summary>
+	ECG_API void init_logger(std::shared_ptr<spdlog::logger> ptr);
+#endif
+
+	/// <summary>з
 	/// Registering an internal buffer for long-term operation with mesh data.
 	/// </summary>
 	/// <param name="mesh"></param>

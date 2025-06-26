@@ -4,6 +4,7 @@
 #include <help/ecg_allocate.h>
 #include <help/ecg_memory.h>
 #include <help/ecg_status.h>
+#include <help/ecg_logger.h>
 #include <help/ecg_geom.h>
 
 namespace ecg {
