@@ -11,16 +11,19 @@ namespace ecg {
 	/// <summary>
 	/// Status codes for different errors
 	/// </summary>
-	enum status_code {
+	enum ecg_status_code {
 		SUCCESS = 0,
 		INCORRECT_VERTEX_COUNT_IN_FACE,
 		NOT_IMPLEMENTED_EXCEPTION,
 		NOT_TRIANGULATED_MESH,
+		NON_MANIFOLD_MESH,
 		UNKNOWN_EXCEPTION,
 		INCORRECT_METHOD,
 		EMPTY_VERTEX_ARR,
+		NOT_CLOSED_MESH,
 		EMPTY_INDEX_ARR,
 		EMPTY_NORM_ARR,
+		RUNTIME_ERROR,
 		OPENCL_ERROR,
 		INVALID_ARG,
 	};
@@ -30,12 +33,12 @@ namespace ecg {
 	/// </summary>
 	class ecg_status_handler {
 	public:
-		ecg_status_handler() : m_status(status_code::SUCCESS) {};
+		ecg_status_handler() : m_status(ecg_status_code::SUCCESS) {};
 		virtual ~ecg_status_handler() = default;
 
 		ecg_status_handler& operator=(const ecg_status_handler& rhs);
 		ecg_status_handler& operator=(const ecg_status& rhs);
-		bool operator==(const status_code& code) const;
+		bool operator==(const ecg_status_code& code) const;
 		ecg_status get_status() const;
 
 	private:
@@ -48,9 +51,9 @@ namespace ecg {
 	/// </summary>
 	class ecg_status_ex : public std::exception {
 	public:
-		ecg_status_ex() : m_message(""), m_status_code(status_code::UNKNOWN_EXCEPTION) {}
+		ecg_status_ex() : m_message(""), m_status_code(ecg_status_code::UNKNOWN_EXCEPTION) {}
 		ecg_status_ex(const ecg_status& status) : m_message(""), m_status_code(status) {}
-		ecg_status_ex(const std::string& str) : m_message(str), m_status_code(status_code::UNKNOWN_EXCEPTION) {}
+		ecg_status_ex(const std::string& str) : m_message(str), m_status_code(ecg_status_code::UNKNOWN_EXCEPTION) {}
 		ecg_status_ex(const std::string& str, const ecg_status& status) : m_message(str), m_status_code(status) {}
 
 		const char* what() const noexcept override { return m_message.c_str(); }

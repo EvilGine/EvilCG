@@ -1,7 +1,9 @@
 #ifndef ECG_GLOBAL_H
 #define ECG_GLOBAL_H
+#include <ecg_api_define.h>
 
 #include <glm/glm.hpp>
+
 #if defined(SYCL_BUILD)
 	#include <sycl/sycl.hpp>
 // #elif defined(OPENCL_BUILD)
@@ -25,6 +27,7 @@
 #include <iostream>
 #include <iterator>
 #include <typeinfo>
+#include <fstream>
 #include <numeric>
 #include <sstream>
 #include <fstream>
@@ -32,6 +35,7 @@
 #include <utility>
 #include <ranges>
 #include <vector>
+#include <format>
 #include <cmath>
 #include <list>
 #include <map>

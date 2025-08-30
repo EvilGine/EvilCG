@@ -1,5 +1,6 @@
 #ifndef ECG_HANDLER_H
 #define ECG_HANDLER_H
+#include <help/ecg_geom.h>
 #include <ecg_global.h>
 
 namespace ecg {
@@ -8,7 +9,7 @@ namespace ecg {
 	/// </summary>
 	class ecg_base_handler {
 	protected:
-		static inline std::atomic<uint64_t> m_ecg_global_handler_id = 1;
+		static inline std::atomic<uint64_t> m_ecg_global_handler_id = 0;
 		uint64_t m_ecg_handler_id;
 	};
 	
@@ -18,8 +19,10 @@ namespace ecg {
 	enum class ecg_memory_type {
 		ECG_INDEXES_ARRAY,
 		ECG_NORMALS_ARRAY,
-		ECG_VERTEXES_ARRAY,
+		ECG_VECTORS_ARRAY,
 		ECG_CL_INTERNAL_MESH,
+		ECG_LIBRARY_ALLOCATED_MESH,
+		NONE_MEMORY_TYPE,
 	};
 
 	/// <summary>
@@ -30,6 +33,12 @@ namespace ecg {
 		ecg_memory_type type;
 		size_t total_bytes;
 		bool is_array;
+
+		ecg_mem_init_info_t() :
+			type(ecg_memory_type::NONE_MEMORY_TYPE),
+			total_bytes(0), is_array(false),
+			ptr(nullptr)
+		{ }
 	};
 
 	/// <summary>
@@ -37,8 +46,10 @@ namespace ecg {
 	/// </summary>
 	class ecg_mem_handler : public ecg_base_handler {
 	public:
+		virtual ~ecg_mem_handler();
 		ecg_mem_handler() = default;
-		virtual ~ecg_mem_handler() = default;
+
+		void destroy_handler();
 		void init_memory(const ecg_mem_init_info_t& init_info);
 
 		bool is_array() const;
@@ -52,11 +63,11 @@ namespace ecg {
 		bool operator!=(const ecg_mem_handler& other) const;
 
 	private:
+		ecg_memory_type m_memory_type = ecg_memory_type::NONE_MEMORY_TYPE;
 		std::shared_ptr<void> m_ecg_memory;
 		bool m_is_initialized = false;
-		ecg_memory_type m_memory_type;
-		size_t m_ecg_memory_size;
-		bool m_is_array;
+		size_t m_ecg_memory_size = 0;
+		bool m_is_array = false;
 	};
 }
 

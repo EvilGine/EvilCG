@@ -1,133 +1,21 @@
 #include <ecg_api.h>
 
-#include <cl/ecg_subprograms.h>
-#include <cl/ecg_host_ctrl.h>
-#include <cl/ecg_internal.h>
-#include <cl/ecg_program.h>
+#include <core/ecg_simplification.h>
+#include <core/ecg_subprograms.h>
+#include <core/ecg_host_ctrl.h>
+#include <core/ecg_internal.h>
+#include <core/ecg_program.h>
 
-#include <help/ecg_memory.h>
+#include <help/ecg_allocate.h>
+#include <help/ecg_logger.h>
+#include <help/ecg_checks.h>
 #include <help/ecg_helper.h>
 #include <help/ecg_geom.h>
 
 namespace ecg {
-	template <typename Type>
-	ecg_array_t allocate_array(int items_cnt, ecg_memory_type type) {
-		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
-		ecg_mem_init_info_t init_info;
-		ecg_array_t result;
-
-		init_info.ptr = std::shared_ptr<Type>(new Type[items_cnt]);
-		init_info.total_bytes = sizeof(Type) * items_cnt;
-		init_info.is_array = true;
-		init_info.type = type;
-
-		ecg_mem_handler mem_handler = mem_ctrl.ecg_mem_register(init_info);
-		result.descriptor_id = mem_handler.get_descriptor();
-		result.arr_size = init_info.total_bytes;
-		result.arr_ptr = init_info.ptr.get();
-		return result;
-	}
-
-	ecg_cl_internal_mesh get_internal_mesh(const ecg_mem_ctrl& mem_ctrl, const ecg_descriptor desc) {
-		ecg_cl_internal_mesh internal_mesh;
-		auto handler = mem_ctrl.get_mem_handler(desc.descriptor_id);
-		if (handler.get_memory_type() == ecg_memory_type::ECG_CL_INTERNAL_MESH) {
-			auto ptr = handler.get_pointer();
-			internal_mesh = *static_cast<ecg_cl_internal_mesh*>(ptr.get());
-		}
-		return internal_mesh;
-	}
-
-	void default_mesh_check(const ecg_mesh_t* mesh, ecg_status_handler& op_res, ecg_status* status) {
-		if (status != nullptr) *status = status_code::SUCCESS;
-		if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-		if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
-		if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-		if (mesh->indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
-	}
-
-	void default_desc_check(const ecg_mem_ctrl& mem_ctrl, const ecg_descriptor desc, ecg_status_handler& op_res, ecg_status* status) {
-		if (status != nullptr) *status = status_code::SUCCESS;
-		if (!mem_ctrl.is_contains_handler(desc.descriptor_id)) op_res = status_code::INVALID_ARG;
-		
-		ecg_cl_internal_mesh internal_mesh = get_internal_mesh(mem_ctrl, desc);
-		if (internal_mesh.indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-		if (internal_mesh.vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
-		if (internal_mesh.indexes_size % 3 != 0) op_res = status_code::NOT_TRIANGULATED_MESH;
-	}
-
-	void on_exception(ecg_status_handler& op_res, ecg_status* status) {
-		if (op_res == status_code::SUCCESS)
-			op_res = status_code::UNKNOWN_EXCEPTION;
-		if (status != nullptr)
-			*status = op_res.get_status();
-	}
-
-	ecg_descriptor register_mesh_buffer(const ecg_mesh_t* mesh, ecg_status* status) {
-		auto& ctrl = ecg_host_ctrl::get_instance();
-		auto& queue = ctrl.get_cmd_queue();
-		auto& context = ctrl.get_context();
-		auto& dev = ctrl.get_device();
-
-		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
-		ecg_mem_init_info_t init_info = {};
-		ecg_status_handler op_res;
-		ecg_descriptor result;
-
-		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr) op_res = status_code::INVALID_ARG;
-			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-			if (mesh->vertexes == nullptr || mesh->vertexes_size <= 0) op_res = status_code::EMPTY_VERTEX_ARR;
-
-			auto ptr = std::shared_ptr<ecg_cl_internal_mesh>(new ecg_cl_internal_mesh);
-			init_info.type = ecg_memory_type::ECG_CL_INTERNAL_MESH;
-			init_info.total_bytes = sizeof(ecg_cl_internal_mesh);
-			init_info.is_array = false;
-			init_info.ptr = ptr;
-
-			size_t vertexes_buffer_size = mesh->vertexes_size * sizeof(vec3_base);
-			size_t normals_buffer_size  = mesh->normals_size  * sizeof(vec3_base);
-			size_t indexes_buffer_size  = mesh->indexes_size  * sizeof(uint32_t);
-
-			cl_int err_create_buffer = CL_SUCCESS;
-			ptr->vertexes = cl::Buffer(context, CL_MEM_READ_WRITE, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
-			ptr->indexes  = cl::Buffer(context, CL_MEM_READ_WRITE, indexes_buffer_size , nullptr, &err_create_buffer); op_res = err_create_buffer;
-			ptr->normals  = cl::Buffer(context, CL_MEM_READ_WRITE, normals_buffer_size , nullptr, &err_create_buffer); op_res = err_create_buffer;
-			
-			ptr->vertexes_size = mesh->vertexes_size;
-			ptr->normals_size = mesh->normals_size;
-			ptr->indexes_size = mesh->indexes_size;
-
-			if (vertexes_buffer_size > 0) op_res = queue.enqueueWriteBuffer(ptr->vertexes, CL_FALSE, 0, vertexes_buffer_size, mesh->vertexes);
-			if (indexes_buffer_size  > 0) op_res = queue.enqueueWriteBuffer(ptr->indexes,  CL_FALSE, 0, indexes_buffer_size,  mesh->indexes);
-			if (normals_buffer_size  > 0) op_res = queue.enqueueWriteBuffer(ptr->normals,  CL_FALSE, 0, normals_buffer_size,  mesh->normals);
-			op_res = queue.finish();
-
-			auto handler = mem_ctrl.ecg_mem_register(init_info);
-			result.descriptor_id = handler.get_descriptor();
-		}
-		catch (...) {
-			on_exception(op_res, status);
-		}
-		
-		return result;
-	}
-
-	bool unregister_descriptor(const ecg_descriptor handler, ecg_status* status) {
-		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
-		ecg_status_handler op_res;
-		bool result = false;
-
-		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			result = mem_ctrl.ecg_mem_free(handler.descriptor_id);
-		}
-		catch (...) {
-			on_exception(op_res, status);
-		}
-
-		return result;
+	void init_logger(std::shared_ptr<spdlog::logger> ptr) {
+		std::scoped_lock lock(g_ecg_set_logger_mutex);
+		g_ecg_logger = ptr;
 	}
 
 	vec3_base get_center(const ecg_mesh_t* mesh, ecg_status* status) {
@@ -135,18 +23,18 @@ namespace ecg {
 
 		try {
 			default_mesh_check(mesh, op_res, status);
-			vec3_base acc = summ_vertexes(mesh, status); 
+			vec3_base acc = sum_vertexes(mesh, status); 
 			if (status != nullptr) op_res = *status;
 			return acc / mesh->vertexes_size;
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return vec3_base();
 	}
 
-	vec3_base summ_vertexes(const ecg_mesh_t* mesh, ecg_status* status) {
+	vec3_base sum_vertexes(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 		vec3_base result;
 
@@ -208,7 +96,7 @@ namespace ecg {
 			result = acc_vector[0];
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -263,45 +151,7 @@ namespace ecg {
 			);
 		}
 		catch (...) {
-			on_exception(op_res, status);
-		}
-
-		return result_bb;
-	}
-
-	// TODO: Add tests to this method
-	bounding_box compute_aabb_by_desc(const ecg_descriptor desc, ecg_status* status) {
-		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
-		bounding_box result_bb = default_bb;
-		ecg_status_handler op_res;
-
-		try {
-			default_desc_check(mem_ctrl, desc, op_res, status);
-			ecg_cl_internal_mesh internal_mesh = get_internal_mesh(mem_ctrl, desc);
-
-			auto& ctrl = ecg_host_ctrl::get_instance();
-			auto& queue = ctrl.get_cmd_queue();
-			auto& context = ctrl.get_context();
-			auto& dev = ctrl.get_device();
-
-			cl::Program::Sources sources = { compute_aabb_code };
-			ecg_program program(context, dev, sources);
-
-			const size_t buffer_size = sizeof(vec3_base) * internal_mesh.vertexes_size;
-			cl::Buffer aabb_result = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bounding_box));
-			cl::Buffer vertexes_buffer = internal_mesh.vertexes;
-
-			cl::NDRange local = cl::NullRange;
-			cl::NDRange global = internal_mesh.vertexes_size;
-			cl_int vert_size = sizeof(vec3_base) / sizeof(float);
-
-			internal_compute_aabb(
-				context, queue, aabb_result, vertexes_buffer, vert_size,
-				program, op_res, global, local, result_bb
-			);
-		}
-		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result_bb;
@@ -391,7 +241,7 @@ namespace ecg {
 			result_obb.p7 = center + transf * result_obb.p7;
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result_obb;
@@ -411,31 +261,6 @@ namespace ecg {
 		res.p7 = { bb->min.x, bb->max.y, bb->max.z };
 
 		return res;
-	}
-
-	ecg_array_t find_nearest_vertices(const ecg_mesh_t* mesh, const vec3_base* point, int k, ecg_status* status) {
-		auto& mem_ctrl = ecg_mem_ctrl::get_instance();
-		ecg_status_handler op_res;
-		ecg_descriptor mem_desc;
-		ecg_array_t result;
-
-		try {
-			default_mesh_check(mesh, op_res, status);
-
-			auto& ctrl = ecg_host_ctrl::get_instance();
-			auto& queue = ctrl.get_cmd_queue();
-			auto& context = ctrl.get_context();
-			auto& dev = ctrl.get_device();
-
-			result = allocate_array<vec3_base>(k, ecg_memory_type::ECG_VERTEXES_ARRAY);
-		}
-		catch (...) {
-			if (mem_desc.descriptor_id != 0) 
-				mem_ctrl.ecg_mem_free(mem_desc.descriptor_id);
-			on_exception(op_res, status);
-		}
-
-		return result;
 	}
 
 	float compute_surface_area(const ecg_mesh_t* mesh, ecg_status* status) {
@@ -483,14 +308,14 @@ namespace ecg {
 			op_res = queue.finish();
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
 	}
 
 	cmp_res compare_meshes(const ecg_mesh_t* m1, const ecg_mesh_t* m2, mat3_base* delta_transform, ecg_status* status) {
-		cmp_res result = cmp_res::UNDEFINED;
+		cmp_res result = cmp_res::CMP_UNDEFINED;
 		ecg_status_handler op_res;
 
 		try {
@@ -503,8 +328,8 @@ namespace ecg {
 			
 		}
 		catch (...) {
-			if (op_res == status_code::SUCCESS)
-				op_res = status_code::UNKNOWN_EXCEPTION;
+			if (op_res == ecg_status_code::SUCCESS)
+				op_res = ecg_status_code::UNKNOWN_EXCEPTION;
 			if (status != nullptr)
 				*status = op_res.get_status();
 		}
@@ -530,7 +355,7 @@ namespace ecg {
 			const cl_int vertex_size = sizeof(vec3_base) / sizeof(float);
 
 			cl_int vertex_buffer_size = mesh->vertexes_size * sizeof(mesh->vertexes[0]);
-			cl::Buffer cov_mat_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(cov_mat));
+			cl::Buffer cov_mat_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cov_mat));
 			cl::Buffer vertex_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_buffer_size);
 
 			cl::Program::Sources obb_sources = {
@@ -558,7 +383,7 @@ namespace ecg {
 			op_res = queue.finish();
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return cov_mat;
@@ -603,7 +428,7 @@ namespace ecg {
 			op_res = queue.finish();
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -644,7 +469,7 @@ namespace ecg {
 			cl::Buffer vert_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vert_buffer_size);
 
 			cl::Buffer is_closed_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(bool));
-			cl::Buffer is_self_intersected_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(bool));
+			cl::Buffer is_self_intersected_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 			cl::Buffer all_vertexes_manifold_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 
 			op_res = queue.enqueueWriteBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
@@ -683,7 +508,7 @@ namespace ecg {
 			result = is_mesh_closed && all_vertexes_manifold && !is_mesh_self_intersected;
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -715,7 +540,7 @@ namespace ecg {
 
 			cl::Buffer is_self_intersected_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 
-			if (method == self_intersection_method::BRUTEFORCE) {
+			if (method == self_intersection_method::SI_BRUTEFORCE) {
 				cl::NDRange global = mesh->indexes_size / 3;
 				cl::NDRange local = cl::NullRange;
 
@@ -734,11 +559,11 @@ namespace ecg {
 				op_res = queue.finish();
 			}
 			else {
-				op_res = status_code::INCORRECT_METHOD;
+				op_res = ecg_status_code::INCORRECT_METHOD;
 			}
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
 		return result;
@@ -746,13 +571,13 @@ namespace ecg {
 
 	ecg_array_t triangulate_mesh(const ecg_mesh_t* mesh, int base_num_vert, ecg_status* status) {
 		ecg_status_handler op_res;
-		ecg_array_t result_arr;
+		ecg_array_t result_indexes;
 
 		try {
-			if (status != nullptr) *status = status_code::SUCCESS;
-			if (mesh == nullptr || base_num_vert <= 0) op_res = status_code::INVALID_ARG;
-			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = status_code::EMPTY_INDEX_ARR;
-			if (mesh->indexes_size % base_num_vert != 0) op_res = status_code::INCORRECT_VERTEX_COUNT_IN_FACE;
+			if (status != nullptr) *status = ecg_status_code::SUCCESS;
+			if (mesh == nullptr || base_num_vert <= 0) op_res = ecg_status_code::INVALID_ARG;
+			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = ecg_status_code::EMPTY_INDEX_ARR;
+			if (mesh->indexes_size % base_num_vert != 0) op_res = ecg_status_code::INCORRECT_VERTEX_COUNT_IN_FACE;
 
 			auto& ctrl = ecg_host_ctrl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
@@ -792,14 +617,253 @@ namespace ecg {
 				old_faces_cnt, curr_vertexes_in_face
 			);
 
-			result_arr = allocate_array<uint32_t>(new_indexes_size, ecg_memory_type::ECG_INDEXES_ARRAY);
-			op_res = queue.enqueueReadBuffer(new_indexes_buffer, CL_FALSE, 0, new_indexes_buffer_size, result_arr.arr_ptr);
+			result_indexes = allocate_array<uint32_t>(new_indexes_size, ecg_memory_type::ECG_INDEXES_ARRAY);
+			op_res = queue.enqueueReadBuffer(new_indexes_buffer, CL_FALSE, 0, new_indexes_buffer_size, result_indexes.arr_ptr);
 			op_res = queue.finish();
 		}
 		catch (...) {
-			on_exception(op_res, status);
+			on_unknown_exception(op_res, status);
 		}
 
-		return result_arr;
+		return result_indexes;
+	}
+
+	float compute_volume(const ecg_mesh_t* mesh, ecg_status* status) {
+		ecg_status_handler op_res;
+		float result_volume = -1.0f;
+
+		try {
+			default_mesh_check(mesh, op_res, status);
+			bool is_manifold = is_mesh_manifold(mesh, status);
+			if (!is_manifold) op_res = ecg_status_code::NON_MANIFOLD_MESH;
+
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			cl::Program::Sources sources = { compute_volume_code };
+			ecg_program program(context, dev, sources);
+
+			cl_uint indexes_size = mesh->indexes_size;
+			cl_uint faces_cnt = mesh->indexes_size / 3;
+			cl_uint vertexes_size = mesh->vertexes_size;
+			size_t vertexes_buffer_size = sizeof(vec3_base) * vertexes_size;
+			size_t indexes_buffer_size  = sizeof(uint32_t) * indexes_size;
+			size_t volume_buffer_size   = sizeof(cl_float) * faces_cnt;
+
+			cl_float pattern = 0.0f;
+			cl_int err_create_buffer = CL_SUCCESS;
+			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY,  vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer indexes_buffer  = cl::Buffer(context, CL_MEM_READ_ONLY,  indexes_buffer_size , nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer volume_buffer   = cl::Buffer(context, CL_MEM_READ_WRITE, volume_buffer_size  , nullptr, &err_create_buffer); op_res = err_create_buffer;
+
+			cl::NDRange global = faces_cnt;
+			cl::NDRange local = cl::NullRange;
+
+			op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, vertexes_buffer_size, mesh->vertexes);
+			op_res = queue.enqueueWriteBuffer(indexes_buffer,  CL_FALSE, 0, indexes_buffer_size,  mesh->indexes);
+			op_res = queue.enqueueFillBuffer(volume_buffer, pattern, 0, volume_buffer_size);
+			op_res = queue.finish();
+
+			op_res = program.execute(
+				queue, compute_volume_name, global, local,
+				vertexes_buffer, vertexes_size,
+				indexes_buffer, indexes_size,
+				volume_buffer, faces_cnt 
+			);
+
+			// TODO: summ on GPU using volume_buffer
+			std::vector<float> volumes; 
+			volumes.resize(faces_cnt);
+			
+			op_res = queue.enqueueReadBuffer(volume_buffer, CL_FALSE, 0, volume_buffer_size, volumes.data());
+			queue.finish();
+
+			result_volume = std::accumulate(volumes.begin(), volumes.end(), 0.0f);
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+		}
+
+		return result_volume;
+	}
+
+	ecg_array_t compute_faces_normals(const ecg_mesh_t* mesh, ecg_status* status) {
+		ecg_array_t result_normals;
+		ecg_status_handler op_res;
+
+		try {
+			default_mesh_check(mesh, op_res, status);
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			cl::Program::Sources sources = { compute_faces_normals_code };
+			ecg_program program(context, dev, sources);
+
+			cl_uint indexes_size = mesh->indexes_size;
+			cl_uint faces_cnt = mesh->indexes_size / 3;
+			cl_uint vertexes_size = mesh->vertexes_size;
+			size_t vertexes_buffer_size = sizeof(vec3_base) * vertexes_size;
+			size_t indexes_buffer_size = sizeof(uint32_t) * indexes_size;
+			size_t normals_buffer_size = sizeof(vec3_base) * faces_cnt;
+
+			cl_float pattern = 0.0f;
+			cl_int err_create_buffer = CL_SUCCESS;
+			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer indexes_buffer  = cl::Buffer(context, CL_MEM_READ_ONLY, indexes_buffer_size,  nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer normals_buffer  = cl::Buffer(context, CL_MEM_READ_WRITE, normals_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+
+			cl::NDRange global = faces_cnt;
+			cl::NDRange local = cl::NullRange;
+
+			op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, vertexes_buffer_size, mesh->vertexes);
+			op_res = queue.enqueueWriteBuffer(indexes_buffer, CL_FALSE, 0, indexes_buffer_size, mesh->indexes);
+			op_res = queue.enqueueFillBuffer(normals_buffer, pattern, 0, normals_buffer_size);
+			op_res = queue.finish();
+
+			op_res = program.execute(
+				queue, compute_faces_normals_name, global, local,
+				vertexes_buffer, vertexes_size,
+				indexes_buffer, indexes_size,
+				normals_buffer, faces_cnt
+			);
+
+			result_normals = allocate_array<vec3_base>(faces_cnt, ecg_memory_type::ECG_VECTORS_ARRAY);
+			op_res = queue.enqueueReadBuffer(normals_buffer, CL_FALSE, 0, normals_buffer_size, result_normals.arr_ptr);
+			op_res = queue.finish();
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+		}
+
+		return result_normals;
+	}
+
+	ecg_array_t compute_vertex_normals(const ecg_mesh_t* mesh, ecg_status* status) {
+		ecg_status_handler op_res;
+		ecg_array_t result;
+
+		try {
+			default_mesh_check(mesh, op_res, status);
+			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& queue = ctrl.get_cmd_queue();
+			auto& context = ctrl.get_context();
+			auto& dev = ctrl.get_device();
+
+			cl::Program::Sources sources = { compute_vertex_normals_code };
+			ecg_program program(context, dev, sources);
+
+			cl_uint indexes_size = mesh->indexes_size;
+			cl_uint vertexes_size = mesh->vertexes_size;
+			size_t indexes_buffer_size = sizeof(uint32_t) * indexes_size;
+			size_t vertexes_buffer_size = sizeof(vec3_base) * vertexes_size;
+
+			cl_float pattern = 0.0f;
+			cl_int err_create_buffer = CL_SUCCESS;
+			cl_int vrt_size = sizeof(vec3_base) / sizeof(float);
+			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer normals_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+			cl::Buffer indexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, indexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
+
+			cl::NDRange global = mesh->vertexes_size;
+			cl::NDRange local = cl::NullRange;
+
+			op_res = queue.enqueueWriteBuffer(vertexes_buffer, CL_FALSE, 0, vertexes_buffer_size, mesh->vertexes);
+			op_res = queue.enqueueWriteBuffer(indexes_buffer, CL_FALSE, 0, indexes_buffer_size, mesh->indexes);
+			op_res = queue.enqueueFillBuffer(normals_buffer, pattern, 0, vertexes_buffer_size);
+			op_res = queue.finish();
+
+			op_res = program.execute(
+				queue, compute_vertex_normals_name, global, local,
+				vertexes_buffer, vertexes_size,
+				indexes_buffer, indexes_size,
+				vrt_size, normals_buffer
+			);
+
+			result = allocate_array<vec3_base>(mesh->vertexes_size, ecg_memory_type::ECG_VECTORS_ARRAY);
+			op_res = queue.enqueueReadBuffer(normals_buffer, CL_FALSE, 0, vertexes_buffer_size, result.arr_ptr);
+			op_res = queue.finish();
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+		}
+
+		return result;
+	}
+
+	ecg_internal_mesh simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status) {
+		ecg_status_handler op_res;
+		ecg_internal_mesh result;
+
+		try {
+			default_mesh_check(mesh, op_res, status);
+			switch (method)
+			{
+			case ecg::SM_CENTER_POINT: {
+				center_point_simplification(mesh, result, op_res);
+				break;
+			}
+			case ecg::SM_QEM: {
+				qem_simplification(mesh, result, op_res);
+				break;
+			}
+			default:
+				op_res = ecg_status_code::INCORRECT_METHOD;
+				break;
+			}
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+		}
+
+		return result;
+	}
+
+	void save_ecg_as_obj(std::ofstream& file, const ecg_mesh_t* mesh) {
+		if (mesh->indexes != nullptr) {
+			for (size_t id = 0; id < mesh->indexes_size; id += 3) {
+				uint32_t* base = &mesh->indexes[id];
+				file << std::format("f {} {} {}", base[0] + 1, base[1] + 1, base[2] + 1) << std::endl;
+			}
+		}
+
+		if (mesh->vertexes != nullptr) {
+			for (size_t id = 0; id < mesh->vertexes_size; ++id) {
+				vec3_base vec = mesh->vertexes[id];
+				file << std::format("v {} {} {}", vec.x, vec.y, vec.z) << std::endl;
+			}
+		}
+	}
+
+	void save_ecg_mesh(const ecg_mesh_t* mesh, const char* filename, ecg_file_type fl_type, ecg_status* status) {
+		ecg_status_handler op_res;
+
+		try {
+			if (mesh == nullptr) op_res = ecg_status_code::INVALID_ARG;
+			if (filename == nullptr) op_res = ecg_status_code::INVALID_ARG;
+
+			std::string fl = filename;
+			std::ofstream file;
+
+			file.open(fl);
+			if (!file.is_open()) op_res = ecg_status_code::RUNTIME_ERROR;
+
+			switch (fl_type) {
+				case ecg::ECG_OBJ_FILE:
+					save_ecg_as_obj(file, mesh);
+					break;
+				case ecg::ECG_RAW_FILE:
+					break;
+				default:
+					op_res = ecg_status_code::INVALID_ARG;
+					break;
+			}
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+		}
 	}
 }

@@ -1,7 +1,40 @@
 #include <help/ecg_handler.h>
 
 namespace ecg {
+	ecg_mem_handler::~ecg_mem_handler() {
+		if (!m_is_initialized) return;
+		destroy_handler();
+	}
+
+	void ecg_mem_handler::destroy_handler() {
+		switch (m_memory_type) {
+		case ecg::ecg_memory_type::ECG_INDEXES_ARRAY:
+			break;
+		case ecg::ecg_memory_type::ECG_NORMALS_ARRAY:
+			break;
+		case ecg::ecg_memory_type::ECG_VECTORS_ARRAY:
+			break;
+		case ecg::ecg_memory_type::ECG_CL_INTERNAL_MESH:
+			break;
+		case ecg::ecg_memory_type::ECG_LIBRARY_ALLOCATED_MESH: 
+			{
+				auto mesh_ptr = static_cast<ecg_mesh_t*>(m_ecg_memory.get());
+				delete[] mesh_ptr->vertexes;
+				delete[] mesh_ptr->indexes;
+				delete[] mesh_ptr->normals;
+			}
+			break;
+		case ecg::ecg_memory_type::NONE_MEMORY_TYPE:
+			assert(false && "Incorrect memory type");
+			break;
+		default:
+			assert(false && "Unknown memory type");
+			break;
+		}
+	}
+
 	void ecg_mem_handler::init_memory(const ecg_mem_init_info_t& init_info) {
+		if (m_ecg_memory != nullptr) destroy_handler();
 		m_ecg_memory_size = init_info.total_bytes;
 		m_is_array = init_info.is_array;
 		m_memory_type = init_info.type;
