@@ -43,32 +43,20 @@ namespace ecg {
 		SM_METHODS_COUNT,
 	};
 
+	/// <summary>
+	/// Type of file.
+	/// </summary>
+	enum ecg_file_type {
+		ECG_OBJ_FILE,
+		ECG_RAW_FILE,
+	};
+
 #if defined(ECG_USE_SPDLOG)
 	/// <summary>
 	/// Init logger for more informations
 	/// </summary>
 	ECG_API void init_logger(std::shared_ptr<spdlog::logger> ptr);
 #endif
-
-	/// <summary>з
-	/// Registering an internal buffer for long-term operation with mesh data.
-	/// </summary>
-	/// <param name="mesh"></param>
-	/// <returns></returns>
-	ECG_API ecg_descriptor register_mesh_buffer(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	
-	/// <summary>
-	/// Destroy library object by ecg_descriptor.
-	/// </summary>
-	/// <param name="mesh"></param>
-	/// <returns></returns>
-	ECG_API bool unregister_descriptor(const ecg_descriptor* const desc, ecg_status* status = nullptr);
-
-	/// <summary>
-	/// Destroy all allocated object in ecg library.
-	/// </summary>
-	/// <returns></returns>
-	ECG_API bool unregister_all_descriptors();
 
 	/// <summary>
 	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
@@ -80,8 +68,7 @@ namespace ecg {
 	/// The status will indicate success or describe any errors encountered during computation.</param>
 	/// <returns>A bounding_box structure containing the minimum and maximum points of the AABB.</returns>
 	ECG_API bounding_box compute_aabb(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	//ECG_API bounding_box compute_aabb_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr);
-
+	
 	/// <summary>
 	/// Converts a bounding_box structure to a full_bounding_box structure, adding additional information 
 	/// as required. The full_bounding_box structure typically extends the bounding box details 
@@ -102,8 +89,7 @@ namespace ecg {
 	/// The status will indicate success or describe any errors encountered during computation.</param>
 	/// <returns>A full_bounding_box structure representing the OBB for the specified mesh.</returns>
 	ECG_API full_bounding_box compute_obb(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	//ECG_API full_bounding_box compute_obb_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr); // TODO: implement later
-
+	
 	/// <summary>
 	/// Computes the sum of all vertex positions in the specified mesh.
 	/// The result is a single vec3_base vector representing the cumulative position of all vertices.
@@ -139,7 +125,6 @@ namespace ecg {
 	/// The computed surface area as a `float` value. If the mesh is invalid or an error occurs, the function returns `-FLT_MAX`.
 	/// </returns>
 	ECG_API float compute_surface_area(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	//ECG_API float compute_surface_area_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr); // TODO: implement later
 	
 	/// <summary>
 	/// A function for comparing two meshes with transformations
@@ -152,8 +137,7 @@ namespace ecg {
 	/// Return enum value that indicates result of comparison.
 	/// </returns>
 	//ECG_API cmp_res compare_meshes(const ecg_mesh_t* m1, const ecg_mesh_t* m2, mat3_base* delta_transform = nullptr, ecg_status* status = nullptr); // TODO: Implement later
-	//ECG_API cmp_res compare_meshes_by_desc(const ecg_descriptor desc, const ecg_mesh_t* m2, mat3_base* delta_transform = nullptr, ecg_status* status = nullptr); // TODO: Implement later
-
+	
 	/// <summary>
 	/// Computes the covariance matrix for a given mesh, representing the variance and covariance 
 	/// of its vertex positions in 3D space. This matrix is essential for analyzing the distribution 
@@ -174,8 +158,7 @@ namespace ecg {
 	/// covariance between different axes.
 	/// </returns>
 	ECG_API mat3_base compute_covariance_matrix(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	//ECG_API mat3_base compute_covariance_matrix_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr); // TODO: implement later
-
+	
 	/// <summary>
 	/// 
 	/// </summary>
@@ -190,8 +173,7 @@ namespace ecg {
 	/// </param>
 	/// <returns></returns>
 	ECG_API bool is_mesh_closed(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	//ECG_API bool is_mesh_closed_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr); // TODO: implement later
-
+	
 	/// <summary>
 	/// Checks that each edge of the mesh belongs to only two polygons, and that all vertexes are manifold.
 	/// </summary>
@@ -199,8 +181,7 @@ namespace ecg {
 	/// <param name="status"></param>
 	/// <returns></returns>
 	ECG_API bool is_mesh_manifold(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	//ECG_API bool is_mesh_manifold_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr); // TODO: implement later
-
+	
 	/// <summary>
 	/// Checks that the mesh contains a self-intersection.
 	/// </summary>
@@ -208,8 +189,7 @@ namespace ecg {
 	/// <param name="status"></param>
 	/// <returns></returns>
 	ECG_API bool is_mesh_self_intersected(const ecg_mesh_t* mesh, self_intersection_method method, ecg_status* status = nullptr);
-	//ECG_API bool is_mesh_self_intersected_by_desc(const ecg_descriptor desc, self_intersection_method method, ecg_status* status = nullptr); // TODO: implement later
-
+	
 	/// <summary>
 	/// Convert non-triangulated mesh into triangulated.
 	/// </summary>
@@ -218,7 +198,6 @@ namespace ecg {
 	/// <param name="status"></param>
 	/// <returns></returns>
 	ECG_API ecg_array_t triangulate_mesh(const ecg_mesh_t* mesh, int base_num_vert, ecg_status* status = nullptr);
-	//ECG_API ecg_array_t triangulate_mesh_by_desc(const ecg_descriptor desc, int base_num_vert, ecg_status* status = nullptr); // TODO: implement later
 	
 	/// <summary>
 	/// Compute volume for closed mesh. Works only for closed meshes.
@@ -227,8 +206,7 @@ namespace ecg {
 	/// <param name="status"></param>
 	/// <returns></returns>
 	ECG_API float compute_volume(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	//ECG_API float compute_volume_by_desc(const ecg_descriptor desc, ecg_status* status = nullptr);
-
+	
 	/// <summary>
 	/// Calculates all the normals of the faces.
 	/// </summary>
@@ -252,6 +230,14 @@ namespace ecg {
 	/// <param name="status"></param>
 	/// <returns></returns>
 	ECG_API ecg_internal_mesh simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// Save ecg mesh to file.
+	/// </summary>
+	/// <param name="mesh"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
+	ECG_API void save_ecg_mesh(const ecg_mesh_t* mesh, const char* filename, ecg_file_type fl_type, ecg_status* status = nullptr);
 
 	// [-] Not implemented
 	//ECG_API ecg_internal_mesh smooth_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);

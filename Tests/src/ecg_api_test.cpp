@@ -582,8 +582,6 @@ TEST(ecg_api, triangulate_mesh) {
 	ASSERT_TRUE((res.arr_size / sizeof(uint32_t)) % 3 == 0);
 	ASSERT_TRUE(res.arr_ptr != nullptr);
 	ASSERT_TRUE(res.arr_size > 0);
-
-	ecg::unregister_descriptor(&res, &status);
 }
 
 TEST(ecg_api, compute_volume) {
@@ -684,8 +682,6 @@ TEST(ecg_api, compute_faces_normals) {
 	ASSERT_TRUE((res.arr_size / sizeof(uint32_t)) % 3 == 0);
 	ASSERT_TRUE(res.arr_size == sizeof(ecg::vec3_base) * default_cube.indexes_size / 3);
 	ASSERT_TRUE(res.arr_ptr != nullptr);
-
-	ecg::unregister_descriptor(&res, &status);
 }
 
 TEST(ecg_api, compute_vertex_normals) {
@@ -737,8 +733,6 @@ TEST(ecg_api, compute_vertex_normals) {
 	ASSERT_TRUE((res.arr_size / sizeof(uint32_t)) % 3 == 0);
 	ASSERT_TRUE(res.arr_size == sizeof(ecg::vec3_base) * default_cube.vertexes_size);
 	ASSERT_TRUE(res.arr_ptr != nullptr);
-
-	ecg::unregister_descriptor(&res, &status);
 }
 
 namespace ecg_simplifiation {

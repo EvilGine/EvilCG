@@ -6,14 +6,7 @@
 namespace ecg {
 	constexpr float epsilon = 1e-6f;
 
-	struct ecg_descriptor {
-		uint64_t descriptor_id;
-
-		ecg_descriptor() : descriptor_id(0) {}
-		ecg_descriptor(uint64_t value) : descriptor_id(value) {}
-	};
-
-	struct ecg_array_t : ecg_descriptor {
+	struct ecg_array_t {
 		size_t arr_size;
 		void* arr_ptr;
 
@@ -136,7 +129,7 @@ namespace ecg {
 		{}
 	};
 
-	struct ecg_internal_mesh : ecg_descriptor {
+	struct ecg_internal_mesh {
 		ecg_mesh_t* internal_mesh;
 		ecg_internal_mesh() : internal_mesh(nullptr) {}
 	};

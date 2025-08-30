@@ -27,6 +27,7 @@
 #include <iostream>
 #include <iterator>
 #include <typeinfo>
+#include <fstream>
 #include <numeric>
 #include <sstream>
 #include <fstream>
