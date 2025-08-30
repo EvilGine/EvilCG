@@ -33,10 +33,12 @@ namespace ecg {
 	protected:
 		ecg_host_ctrl(int device_id = default_id);
 		cl_int default_init(int device_id = default_id);
+		
+		static size_t get_vendor_bonus(const std::string& vendor);
+		static size_t get_device_score(const cl::Device& dev);
 
 		template <std::ranges::range Iterable>
 		cl::Device choose_device(const Iterable& devices);
-		static size_t get_device_score(const cl::Device& dev);
 		cl::Platform choose_platform();
 		cl::Device find_best_device();
 		

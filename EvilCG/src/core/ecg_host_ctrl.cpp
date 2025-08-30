@@ -1,6 +1,12 @@
 #include <core/ecg_host_ctrl.h>
 
 namespace ecg {
+	const std::unordered_map<std::string, size_t> g_vendor_score = {
+		{"NVIDIA", 1'000'000},
+		{"AMD", 900'000},
+		{"Intel", 0}
+	};
+
 	cl::Context& ecg_host_ctrl::get_context() {
 		return m_context;
 	}
@@ -73,8 +79,10 @@ namespace ecg {
 		device_t score_with_device = { -1, 0, cl::Device() };
 		for (auto& item : devices_of_platform) {
 			for (cl::Device& dev : item.second) {
+				std::string vendor = dev.getInfo<CL_DEVICE_VENDOR>();
 				size_t score = get_device_score(dev);
 
+				score += get_vendor_bonus(vendor);
 				if (score_with_device.score <= score) {
 					score_with_device.score = score;
 					score_with_device.device = dev;
@@ -83,6 +91,17 @@ namespace ecg {
 		}
 
 		return score_with_device.device;
+	}
+
+	size_t ecg_host_ctrl::get_vendor_bonus(const std::string& vendor) {
+		size_t vendor_bonus = 0;
+		for (const auto& known_vendor : g_vendor_score) {
+			if (vendor.find(known_vendor.first) != std::string::npos) {
+				vendor_bonus = known_vendor.second;
+				break;
+			}
+		}
+		return vendor_bonus;
 	}
 
 	cl_int ecg_host_ctrl::default_init(int device_id) {
@@ -130,9 +149,9 @@ namespace ecg {
 			platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
 			
 			for (auto& dev : devices) {
-				result.push_back(device_t{
-					id, get_device_score(dev), dev
-				});
+				std::string vendor = dev.getInfo<CL_DEVICE_VENDOR>();
+				size_t score = get_device_score(dev) + get_vendor_bonus(vendor);
+				result.push_back(device_t{ id, score, dev });
 				++id;
 			}
 		}

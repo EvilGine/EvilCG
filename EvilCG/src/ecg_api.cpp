@@ -355,7 +355,7 @@ namespace ecg {
 			const cl_int vertex_size = sizeof(vec3_base) / sizeof(float);
 
 			cl_int vertex_buffer_size = mesh->vertexes_size * sizeof(mesh->vertexes[0]);
-			cl::Buffer cov_mat_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(cov_mat));
+			cl::Buffer cov_mat_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cov_mat));
 			cl::Buffer vertex_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertex_buffer_size);
 
 			cl::Program::Sources obb_sources = {
@@ -469,7 +469,7 @@ namespace ecg {
 			cl::Buffer vert_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vert_buffer_size);
 
 			cl::Buffer is_closed_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(bool));
-			cl::Buffer is_self_intersected_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof(bool));
+			cl::Buffer is_self_intersected_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 			cl::Buffer all_vertexes_manifold_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(bool));
 
 			op_res = queue.enqueueWriteBuffer(all_vertexes_manifold_buffer, CL_FALSE, 0, sizeof(bool), &all_vertexes_manifold);
@@ -650,7 +650,7 @@ namespace ecg {
 			cl_uint vertexes_size = mesh->vertexes_size;
 			size_t vertexes_buffer_size = sizeof(vec3_base) * vertexes_size;
 			size_t indexes_buffer_size  = sizeof(uint32_t) * indexes_size;
-			size_t volume_buffer_size   = sizeof(uint32_t) * faces_cnt;
+			size_t volume_buffer_size   = sizeof(cl_float) * faces_cnt;
 
 			cl_float pattern = 0.0f;
 			cl_int err_create_buffer = CL_SUCCESS;
