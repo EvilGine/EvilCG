@@ -1,13 +1,20 @@
-#include <core/ecg_simplification.h>
+#include <ecg_api.h>
 
 #include <core/ecg_subprograms.h>
 #include <core/ecg_host_ctrl.h>
 #include <core/ecg_internal.h>
 #include <core/ecg_program.h>
 
+#include <help/ecg_allocate.h>
+#include <help/ecg_logger.h>
+#include <help/ecg_helper.h>
+#include <help/ecg_checks.h>
+#include <help/ecg_math.h>
+#include <help/ecg_geom.h>
+
 namespace ecg {
 	void center_point_simplification(const ecg_mesh_t* mesh, ecg_internal_mesh& result_mesh, ecg_status_handler& op_res) {
-		auto& ctrl = ecg_host_ctrl::get_instance();
+		auto& ctrl = ecg_cl::get_instance();
 		auto& queue = ctrl.get_cmd_queue();
 		auto& context = ctrl.get_context();
 		auto& dev = ctrl.get_device();
@@ -24,7 +31,7 @@ namespace ecg {
 		cl_int err_create_buffer = CL_SUCCESS;
 		cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, vertexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
 		cl::Buffer indexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, indexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
-		
+
 		cl_uint result_indexes_size = indexes_size / 3;
 		cl_uint result_vertexes_size = vertexes_size / 3;
 		cl::Buffer result_vertexes_buffer = cl::Buffer(context, CL_MEM_READ_WRITE, vertexes_buffer_size / 3, &err_create_buffer); op_res = err_create_buffer;
@@ -51,5 +58,33 @@ namespace ecg {
 
 	void qem_simplification(const ecg_mesh_t* mesh, ecg_internal_mesh& result_mesh, ecg_status_handler& op_res) {
 		throw std::logic_error("Not implemented method"); // TODO: implement later this method
+	}
+
+	ecg_internal_mesh simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status) {
+		ecg_status_handler op_res;
+		ecg_internal_mesh result;
+
+		try {
+			default_mesh_check(mesh, op_res, status);
+			switch (method)
+			{
+			case ecg::SM_CENTER_POINT: {
+				center_point_simplification(mesh, result, op_res);
+				break;
+			}
+			case ecg::SM_QEM: {
+				qem_simplification(mesh, result, op_res);
+				break;
+			}
+			default:
+				op_res = ecg_status_code::INCORRECT_METHOD;
+				break;
+			}
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+		}
+
+		return result;
 	}
 }

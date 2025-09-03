@@ -1,6 +1,6 @@
 #ifndef ECG_PROGRAM_H
 #define ECG_PROGRAM_H
-#include <CL/opencl.hpp>
+#include <core/ecg_cl_version.h>
 #include <ecg_api_define.h>
 #include <ecg_global.h>
 
@@ -16,7 +16,7 @@ namespace ecg {
 		std::is_same_v<T, cl_float4> || std::is_same_v<T, cl_float8> ||
 		std::is_same_v<T, cl_half> || std::is_same_v<T, cl_mem> ||
 		std::is_same_v<T, cl_sampler> || std::is_same_v<T, cl_event> ||
-		std::is_same_v<T, cl::Buffer>;
+		std::is_same_v<T, cl::Buffer> || std::is_same_v<T, std::nullptr_t>;
 
 	/// <summary>
 	/// Program wrapper for easy work with OpenCL program.

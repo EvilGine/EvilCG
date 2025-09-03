@@ -1,20 +1,11 @@
 #ifndef ECG_GLOBAL_H
 #define ECG_GLOBAL_H
+#include <core/ecg_cl_version.h>
 #include <ecg_api_define.h>
 
 #include <glm/glm.hpp>
 
-#if defined(SYCL_BUILD)
-	#include <sycl/sycl.hpp>
-// #elif defined(OPENCL_BUILD)
-#else
-	#ifdef __APPLE__
-		#include <OpenCL/opencl.h>
-	#else
-		#include <CL/opencl.hpp>
-	#endif
-#endif
-
+#include <condition_variable>
 #include <thread>
 #include <mutex>
 
@@ -30,7 +21,6 @@
 #include <fstream>
 #include <numeric>
 #include <sstream>
-#include <fstream>
 #include <iomanip>
 #include <utility>
 #include <ranges>

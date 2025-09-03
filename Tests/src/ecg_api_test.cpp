@@ -7,7 +7,7 @@
 #include <ecg_api.h>
 
 TEST(ecg_api, init_ecg) {
-	ecg::ecg_host_ctrl& host_ctrl = ecg::ecg_host_ctrl::get_instance();
+	ecg::ecg_cl& host_ctrl = ecg::ecg_cl::get_instance();
 	auto queue = host_ctrl.get_cmd_queue();
 	auto context = host_ctrl.get_context();
 	auto device = host_ctrl.get_device();
@@ -17,6 +17,29 @@ TEST(ecg_api, init_ecg) {
 	ASSERT_NE(device, cl::Device());
 	ASSERT_NE(context, cl::Context());
 	ASSERT_NE(queue, cl::CommandQueue());
+}
+
+TEST(ecg_api, init_ecg_with_device) {
+	ecg::ecg_cl& host_ctrl = ecg::ecg_cl::get_instance();
+	auto devices = ecg::ecg_cl::get_available_devices();
+
+	for (auto& dev : devices) {
+		host_ctrl.release_controller();
+		host_ctrl.default_init(dev.id);
+		
+		auto queue = host_ctrl.get_cmd_queue();
+		auto context = host_ctrl.get_context();
+		auto device = host_ctrl.get_device();
+
+		ASSERT_NE(device, cl::Device());
+		ASSERT_NE(context, cl::Context());
+		ASSERT_NE(queue, cl::CommandQueue());
+
+		std::cout << "Device Name: " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+	}
+
+	host_ctrl.release_controller();
+	host_ctrl.default_init();
 }
 
 TEST(ecg_api, summ_vertexes) {
@@ -579,8 +602,8 @@ TEST(ecg_api, triangulate_mesh) {
 	timer.end();
 
 	ASSERT_EQ(status, ecg::ecg_status_code::SUCCESS);
-	ASSERT_TRUE((res.arr_size / sizeof(uint32_t)) % 3 == 0);
 	ASSERT_TRUE(res.arr_ptr != nullptr);
+	ASSERT_TRUE(res.arr_size % 3 == 0);
 	ASSERT_TRUE(res.arr_size > 0);
 }
 
@@ -679,9 +702,9 @@ TEST(ecg_api, compute_faces_normals) {
 	timer.end();
 
 	ASSERT_EQ(status, ecg::ecg_status_code::SUCCESS);
-	ASSERT_TRUE((res.arr_size / sizeof(uint32_t)) % 3 == 0);
-	ASSERT_TRUE(res.arr_size == sizeof(ecg::vec3_base) * default_cube.indexes_size / 3);
+	ASSERT_TRUE(res.arr_size == default_cube.indexes_size / 3);
 	ASSERT_TRUE(res.arr_ptr != nullptr);
+	ASSERT_TRUE(res.arr_size % 3 == 0);
 }
 
 TEST(ecg_api, compute_vertex_normals) {
@@ -730,9 +753,9 @@ TEST(ecg_api, compute_vertex_normals) {
 	timer.end();
 
 	ASSERT_EQ(status, ecg::ecg_status_code::SUCCESS);
-	ASSERT_TRUE((res.arr_size / sizeof(uint32_t)) % 3 == 0);
-	ASSERT_TRUE(res.arr_size == sizeof(ecg::vec3_base) * default_cube.vertexes_size);
+	ASSERT_TRUE(res.arr_size == default_cube.vertexes_size);
 	ASSERT_TRUE(res.arr_ptr != nullptr);
+	ASSERT_TRUE(res.arr_size > 0);
 }
 
 namespace ecg_simplifiation {

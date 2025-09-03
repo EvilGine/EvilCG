@@ -1,6 +1,5 @@
 #include <ecg_api.h>
 
-#include <core/ecg_simplification.h>
 #include <core/ecg_subprograms.h>
 #include <core/ecg_host_ctrl.h>
 #include <core/ecg_internal.h>
@@ -8,8 +7,9 @@
 
 #include <help/ecg_allocate.h>
 #include <help/ecg_logger.h>
-#include <help/ecg_checks.h>
 #include <help/ecg_helper.h>
+#include <help/ecg_checks.h>
+#include <help/ecg_math.h>
 #include <help/ecg_geom.h>
 
 namespace ecg {
@@ -41,7 +41,7 @@ namespace ecg {
 		try {
 			default_mesh_check(mesh, op_res, status);
 
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -128,7 +128,7 @@ namespace ecg {
 		try {
 			default_mesh_check(mesh, op_res, status);
 			
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -164,7 +164,7 @@ namespace ecg {
 		try {
 			default_mesh_check(mesh, op_res, status);
 			
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -270,7 +270,7 @@ namespace ecg {
 		try {
 			default_mesh_check(mesh, op_res, status);
 
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -344,7 +344,7 @@ namespace ecg {
 		try {
 			default_mesh_check(mesh, op_res, status);
 
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -396,7 +396,7 @@ namespace ecg {
 		try {
 			default_mesh_check(mesh, op_res, status);
 
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -445,7 +445,7 @@ namespace ecg {
 			bool all_vertexes_manifold = true;
 			bool is_mesh_closed = true;
 
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -521,7 +521,7 @@ namespace ecg {
 		try {
 			default_mesh_check(mesh, op_res, status);
 		
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -579,7 +579,7 @@ namespace ecg {
 			if (mesh->indexes == nullptr || mesh->indexes_size <= 0) op_res = ecg_status_code::EMPTY_INDEX_ARR;
 			if (mesh->indexes_size % base_num_vert != 0) op_res = ecg_status_code::INCORRECT_VERTEX_COUNT_IN_FACE;
 
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -617,7 +617,7 @@ namespace ecg {
 				old_faces_cnt, curr_vertexes_in_face
 			);
 
-			result_indexes = allocate_array<uint32_t>(new_indexes_size, ecg_memory_type::ECG_INDEXES_ARRAY);
+			result_indexes = allocate_array<uint32_t>(new_indexes_size);
 			op_res = queue.enqueueReadBuffer(new_indexes_buffer, CL_FALSE, 0, new_indexes_buffer_size, result_indexes.arr_ptr);
 			op_res = queue.finish();
 		}
@@ -637,7 +637,7 @@ namespace ecg {
 			bool is_manifold = is_mesh_manifold(mesh, status);
 			if (!is_manifold) op_res = ecg_status_code::NON_MANIFOLD_MESH;
 
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -695,7 +695,7 @@ namespace ecg {
 
 		try {
 			default_mesh_check(mesh, op_res, status);
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -731,7 +731,7 @@ namespace ecg {
 				normals_buffer, faces_cnt
 			);
 
-			result_normals = allocate_array<vec3_base>(faces_cnt, ecg_memory_type::ECG_VECTORS_ARRAY);
+			result_normals = allocate_array<vec3_base>(faces_cnt);
 			op_res = queue.enqueueReadBuffer(normals_buffer, CL_FALSE, 0, normals_buffer_size, result_normals.arr_ptr);
 			op_res = queue.finish();
 		}
@@ -748,7 +748,7 @@ namespace ecg {
 
 		try {
 			default_mesh_check(mesh, op_res, status);
-			auto& ctrl = ecg_host_ctrl::get_instance();
+			auto& ctrl = ecg_cl::get_instance();
 			auto& queue = ctrl.get_cmd_queue();
 			auto& context = ctrl.get_context();
 			auto& dev = ctrl.get_device();
@@ -783,7 +783,7 @@ namespace ecg {
 				vrt_size, normals_buffer
 			);
 
-			result = allocate_array<vec3_base>(mesh->vertexes_size, ecg_memory_type::ECG_VECTORS_ARRAY);
+			result = allocate_array<vec3_base>(mesh->vertexes_size);
 			op_res = queue.enqueueReadBuffer(normals_buffer, CL_FALSE, 0, vertexes_buffer_size, result.arr_ptr);
 			op_res = queue.finish();
 		}
@@ -792,78 +792,5 @@ namespace ecg {
 		}
 
 		return result;
-	}
-
-	ecg_internal_mesh simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status) {
-		ecg_status_handler op_res;
-		ecg_internal_mesh result;
-
-		try {
-			default_mesh_check(mesh, op_res, status);
-			switch (method)
-			{
-			case ecg::SM_CENTER_POINT: {
-				center_point_simplification(mesh, result, op_res);
-				break;
-			}
-			case ecg::SM_QEM: {
-				qem_simplification(mesh, result, op_res);
-				break;
-			}
-			default:
-				op_res = ecg_status_code::INCORRECT_METHOD;
-				break;
-			}
-		}
-		catch (...) {
-			on_unknown_exception(op_res, status);
-		}
-
-		return result;
-	}
-
-	void save_ecg_as_obj(std::ofstream& file, const ecg_mesh_t* mesh) {
-		if (mesh->indexes != nullptr) {
-			for (size_t id = 0; id < mesh->indexes_size; id += 3) {
-				uint32_t* base = &mesh->indexes[id];
-				file << std::format("f {} {} {}", base[0] + 1, base[1] + 1, base[2] + 1) << std::endl;
-			}
-		}
-
-		if (mesh->vertexes != nullptr) {
-			for (size_t id = 0; id < mesh->vertexes_size; ++id) {
-				vec3_base vec = mesh->vertexes[id];
-				file << std::format("v {} {} {}", vec.x, vec.y, vec.z) << std::endl;
-			}
-		}
-	}
-
-	void save_ecg_mesh(const ecg_mesh_t* mesh, const char* filename, ecg_file_type fl_type, ecg_status* status) {
-		ecg_status_handler op_res;
-
-		try {
-			if (mesh == nullptr) op_res = ecg_status_code::INVALID_ARG;
-			if (filename == nullptr) op_res = ecg_status_code::INVALID_ARG;
-
-			std::string fl = filename;
-			std::ofstream file;
-
-			file.open(fl);
-			if (!file.is_open()) op_res = ecg_status_code::RUNTIME_ERROR;
-
-			switch (fl_type) {
-				case ecg::ECG_OBJ_FILE:
-					save_ecg_as_obj(file, mesh);
-					break;
-				case ecg::ECG_RAW_FILE:
-					break;
-				default:
-					op_res = ecg_status_code::INVALID_ARG;
-					break;
-			}
-		}
-		catch (...) {
-			on_unknown_exception(op_res, status);
-		}
 	}
 }

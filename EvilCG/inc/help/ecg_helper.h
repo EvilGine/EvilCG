@@ -1,21 +1,60 @@
 #ifndef ECG_HELPER_H
 #define ECG_HELPER_H
+#include <help/ecg_overloads.h>
+#include <help/ecg_hasher.h>
 #include <help/ecg_geom.h>
+#include <help/ecg_math.h>
 #include <ecg_global.h>
-#include <Eigen/Dense>
 
 namespace ecg {
-    mat3_base make_transform(const vec3_base& z_vec, const vec3_base& y_vec);
-    mat3_base convert_from_eigen(const Eigen::Matrix3f& eigen_mat);
-    vec3_base convert_from_eigen(const Eigen::Vector3f& eigen_vec);
-    vec3_base cross(const vec3_base& lhs, const vec3_base& rhs);
-    Eigen::Matrix3f convert_to_eigen_mat(const mat3_base& mat);
-    mat3_base invert(const mat3_base& mat) noexcept;
-    vec3_base normalize(const vec3_base& vec);
-    mat3_base transpose(const mat3_base& mat);
-    svd_t compute_svd(const mat3_base& mat);
-    float length(const vec3_base& vec);
-    float det(const mat3_base& mat);
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="vertexes"></param>
+	/// <param name="indexes"></param>
+	/// <returns></returns>
+	std::pair<std::vector<vec3_base>, std::vector<uint32_t>> optimize_geom_data(
+		const std::vector<vec3_base>& vertexes, const std::vector<uint32_t>& indexes
+	);
+	
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="vertexes"></param>
+	/// <param name="indexes"></param>
+	/// <returns></returns>
+	std::pair<std::vector<vec3_base>, std::vector<uint32_t>> optimize_intersection_set(
+		const std::vector<vec3_base>& vertexes, const std::vector<uint32_t>& indexes
+	);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="p"></param>
+	/// <param name="dir"></param>
+	/// <param name="s0"></param>
+	/// <param name="s1"></param>
+	/// <param name="s2"></param>
+	/// <returns></returns>
+	bool ray_intersects_triangle(vec3_base p, vec3_base dir, vec3_base s0, vec3_base s1, vec3_base s2);
+	
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="p"></param>
+	/// <param name="s0"></param>
+	/// <param name="s1"></param>
+	/// <param name="s2"></param>
+	/// <returns></returns>
+	bool check_is_point_in_face(vec3_base p, vec3_base s0, vec3_base s1, vec3_base s2);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="a"></param>
+	/// <param name="b"></param>
+	/// <returns></returns>
+	std::pair<uint32_t, uint32_t> make_edge(uint32_t a, uint32_t b);
 }
 
 #endif

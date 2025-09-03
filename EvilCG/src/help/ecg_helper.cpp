@@ -1,102 +1,108 @@
 #include <help/ecg_helper.h>
 
 namespace ecg {
-    Eigen::Matrix3f convert_to_eigen_mat(const mat3_base& mat) {
-        Eigen::Matrix3f eigenMat;
-        eigenMat(0, 0) = mat.m00; eigenMat(0, 1) = mat.m01; eigenMat(0, 2) = mat.m02;
-        eigenMat(1, 0) = mat.m10; eigenMat(1, 1) = mat.m11; eigenMat(1, 2) = mat.m12;
-        eigenMat(2, 0) = mat.m20; eigenMat(2, 1) = mat.m21; eigenMat(2, 2) = mat.m22;
-        return eigenMat;
-    }
+	std::pair<std::vector<vec3_base>, std::vector<uint32_t>> optimize_geom_data(
+		const std::vector<vec3_base>& vertexes, const std::vector<uint32_t>& indexes
+	) {
+		std::unordered_map<vec3_base, uint32_t, ecg_hash_func, ecg_compare_func> vert_to_index;
+		std::vector<vec3_base> opt_vertexes;
+		std::vector<uint32_t> opt_indexes;
 
-    mat3_base convert_from_eigen(const Eigen::Matrix3f& eigen_mat) {
-        mat3_base mat;
-        mat.m00 = eigen_mat(0, 0);
-        mat.m01 = eigen_mat(0, 1);
-        mat.m02 = eigen_mat(0, 2);
+		for (auto idx : indexes) {
+			if (idx >= vertexes.size())
+				continue;
 
-        mat.m10 = eigen_mat(1, 0);
-        mat.m11 = eigen_mat(1, 1);
-        mat.m12 = eigen_mat(1, 2);
+			const auto& v = vertexes[idx];
+			auto it = vert_to_index.find(v);
 
-        mat.m20 = eigen_mat(2, 0);
-        mat.m21 = eigen_mat(2, 1);
-        mat.m22 = eigen_mat(2, 2);
+			if (it == vert_to_index.end()) {
+				uint32_t new_id = static_cast<uint32_t>(opt_vertexes.size());
+				opt_vertexes.push_back(v);
 
-        return mat;
-    }
+				vert_to_index[v] = new_id;
+				opt_indexes.push_back(new_id);
+			}
+			else {
+				opt_indexes.push_back(it->second);
+			}
+		}
 
-    vec3_base convert_from_eigen(const Eigen::Vector3f& eigen_vec) {
-        return vec3_base(eigen_vec(0), eigen_vec(1), eigen_vec(2));
-    }
+		return { opt_vertexes, opt_indexes };
+	}
 
-    mat3_base transpose(const mat3_base& mat) {
-        return mat3_base{
-            mat.m00, mat.m10, mat.m20,
-            mat.m01, mat.m11, mat.m21,
-            mat.m02, mat.m12, mat.m22
-        };
-    }
+	std::pair<std::vector<vec3_base>, std::vector<uint32_t>> optimize_intersection_set(
+		const std::vector<vec3_base>& vertexes, const std::vector<uint32_t>& indexes
+	) {
+		if (vertexes.size() * 2 != indexes.size())
+			return { {}, {} };
 
-    float det(const mat3_base& mat) {
-        float pos =
-            (mat.m00 * mat.m11 * mat.m22) +
-            (mat.m01 * mat.m12 * mat.m20) +
-            (mat.m02 * mat.m10 * mat.m21);
+		std::unordered_map<vec3_base, std::pair<uint32_t, uint32_t>, ecg_hash_func, ecg_compare_func> unique_vertexes;
+		for (size_t id = 0; id < vertexes.size(); ++id) {
+			vec3_base vertex = vertexes[id];
+			std::pair<uint32_t, uint32_t> polygons = {
+				indexes[id * 2 + 0],
+				indexes[id * 2 + 1]
+			};
 
-        float neg =
-            (mat.m02 * mat.m11 * mat.m20) +
-            (mat.m01 * mat.m10 * mat.m22) +
-            (mat.m00 * mat.m12 * mat.m21);
+			unique_vertexes.insert({ vertex, polygons });
+		}
 
-        return pos - neg;
-    }
+		std::vector<vec3_base> opt_vertexes;
+		std::vector<uint32_t> opt_indexes;
 
-    mat3_base invert(const mat3_base& mat) noexcept {
-        Eigen::Matrix3f eigen_mat = convert_to_eigen_mat(mat);
-        Eigen::Matrix3f eigen_inv = eigen_mat.inverse();
-        return convert_from_eigen(eigen_inv);
-    }
+		for (const auto& [vertex, polygons] : unique_vertexes) {
+			opt_vertexes.push_back(vertex);
+			opt_indexes.push_back(polygons.first);
+			opt_indexes.push_back(polygons.second);
+		}
 
-    float length(const vec3_base& vec) {
-        return std::sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
-    }
+		return { opt_vertexes, opt_indexes };
+	}
 
-    vec3_base normalize(const vec3_base& vec) {
-        float len = length(vec);
-        return vec / len;
-    }
+	bool ray_intersects_triangle(vec3_base p, vec3_base dir, vec3_base s0, vec3_base s1, vec3_base s2) {
+		vec3_base ab = s1 - s0;
+		vec3_base cb = s2 - s0;
 
-    vec3_base cross(const vec3_base& lhs, const vec3_base& rhs) {
-        return vec3_base{
-            (lhs.y * rhs.z - lhs.z * rhs.y),
-            (lhs.z * rhs.x - lhs.x * rhs.z),
-            (lhs.x * rhs.y - lhs.y * rhs.x)
-        };
-    }
+		vec3_base normal = cross(ab, cb);
 
-    svd_t compute_svd(const mat3_base& mat) {
-        auto eigen_mat = convert_to_eigen_mat(mat);
-        Eigen::JacobiSVD<Eigen::Matrix3f> svd(eigen_mat, Eigen::ComputeFullU | Eigen::ComputeFullV);
+		float d = dot(-normal, s0);
+		float denom = dot(normal, dir);
+		if (std::abs(denom) < 1e-7f)
+			return false;
 
-        Eigen::Matrix3f u = svd.matrixU();
-        Eigen::Vector3f sigma = svd.singularValues();
-        Eigen::Matrix3f v = svd.matrixV();
+		float t = -(dot(normal, p) + d) / denom;
+		if (t < 0)
+			return false;
 
-        return svd_t{ convert_from_eigen(u), convert_from_eigen(sigma), convert_from_eigen(v) };
-    }
+		vec3_base intersect = p + dir * t;
+		return check_is_point_in_face(intersect, s0, s1, s2);
+	}
 
-    mat3_base make_transform(const vec3_base& z_vec, const vec3_base& y_vec) {
-        vec3_base x_vec = cross(y_vec, z_vec);
+	bool check_is_point_in_face(vec3_base p, vec3_base s0, vec3_base s1, vec3_base s2) {
+		constexpr float eps = 1e-8f;
 
-        vec3_base z_norm = normalize(z_vec);
-        vec3_base y_norm = normalize(y_vec);
-        vec3_base x_norm = normalize(x_vec);
+		vec3_base v0 = s1 - s0;
+		vec3_base v1 = s2 - s0;
+		vec3_base v2 = p - s0;
 
-        return mat3_base{
-            x_norm.x, y_norm.x, z_norm.x,
-            x_norm.y, y_norm.y, z_norm.y,
-            x_norm.z, y_norm.z, z_norm.z
-        };
-    }
+		float d00 = dot(v0, v0);
+		float d01 = dot(v0, v1);
+		float d11 = dot(v1, v1);
+		float d20 = dot(v2, v0);
+		float d21 = dot(v2, v1);
+
+		float denom = d00 * d11 - d01 * d01;
+		if (std::abs(denom) < eps) return false;
+
+		float v = (d11 * d20 - d01 * d21) / denom;
+		float w = (d00 * d21 - d01 * d20) / denom;
+		float u = 1.0f - v - w;
+
+		bool res = u >= eps && v >= eps && w >= eps;
+		return res;
+	}
+
+	std::pair<uint32_t, uint32_t> make_edge(uint32_t a, uint32_t b) {
+		return std::pair{ std::min(a,b), std::max(a,b) };
+	};
 }
