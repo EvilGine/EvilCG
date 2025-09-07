@@ -758,6 +758,25 @@ TEST(ecg_api, compute_vertex_normals) {
 	ASSERT_TRUE(res.arr_size > 0);
 }
 
+namespace ecg_intersection {
+	TEST(ecg_api, compute_intersection) {
+		auto& mesh_inst = ecg_meshes::get_instance();
+		ecg::ecg_mesh_t cube_int_1 = mesh_inst.loaded_meshes_by_name["cube_int_1.obj"]->mesh;
+		ecg::ecg_mesh_t cube_int_2 = mesh_inst.loaded_meshes_by_name["cube_int_2.obj"]->mesh;
+
+		ecg::ecg_status status = ecg::ecg_status_code::SUCCESS;
+		custom_timer_t timer;
+
+		timer.start();
+		ecg::ecg_internal_mesh_t res = ecg::compute_intersection(&cube_int_1, &cube_int_2, &status);
+		timer.end();
+
+		ASSERT_TRUE(res.vertexes.arr_ptr != nullptr);
+		ASSERT_TRUE(res.vertexes.arr_size != 0);
+		ASSERT_TRUE(res.vertexes.handler != 0);
+	}
+}
+
 namespace ecg_simplifiation {
 	TEST(ecg_api, center_point_simplification) {
 		// TODO: implement tests

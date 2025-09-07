@@ -19,7 +19,8 @@ namespace ecg {
 
 	const int min_votes_for_inner_vertex = 2;
 
-	intersection_set_t compute_intersection(const ecg_mesh_t* m1, const ecg_mesh_t* m2, ecg_status* status) {
+	intersection_set_t get_intersection_points(const ecg_mesh_t* m1, const ecg_mesh_t* m2, ecg_status* status) {
+		auto& mem_inst = ecg_mem::get_instance();
 		auto& ctrl = ecg_cl::get_instance();
 		auto queue = ctrl.get_cmd_queue();
 		auto context = ctrl.get_context();
@@ -147,13 +148,19 @@ namespace ecg {
 			op_res = queue.enqueueReadBuffer(faces_buffer, CL_FALSE, 0, faces_buffer_size, int_faces.data());
 			queue.finish();
 
-			{
-				auto [opt_vrt, opt_ind] = optimize_intersection_set(intersections, int_faces);
-				// TODO: Implement second stage here
-			}
+			auto [opt_vrt, opt_ind] = optimize_intersection_set(intersections, int_faces);
+			intersection_set_t temp_int_set;
+
+			res.vrt = allocate_array<vec3_base>(opt_vrt.size());
+			res.ind = allocate_array<uint32_t>(opt_ind.size());
+
+			safe_copy_to_arr(res.vrt, opt_vrt);
+			safe_copy_to_arr(res.ind, opt_ind);
 		}
 		catch (...) {
 			on_unknown_exception(op_res, status);
+			if (res.vrt.handler != 0) mem_inst.delete_memory(res.vrt.handler);
+			if (res.ind.handler != 0) mem_inst.delete_memory(res.ind.handler);
 			res = empty_res;
 		}
 
@@ -361,5 +368,139 @@ namespace ecg {
 			find_new_vertex = add_new_vertex;
 			++current_iteration;
 		} while (find_new_vertex && current_iteration < max_iterations);
+	}
+
+	ecg_array_t add_interior_intersection_points(
+		const ecg_mesh_t* m1, const ecg_mesh_t* m2, const intersection_set_t* int_set, ecg_status* status
+	) {
+		auto& mem_inst = ecg_mem::get_instance();
+		std::list<void*> allocated_memory;
+		ecg_status_handler op_res;
+
+		ecg_array_t result;
+		ecg_array_t empty;
+
+		empty.arr_ptr = nullptr;
+		empty.arr_size = 0;
+		result = empty;
+
+		try {
+			default_mesh_check(m1, op_res, status);
+			default_mesh_check(m2, op_res, status);
+
+			std::span<vec3_base> intersection_points(static_cast<vec3_base*>(int_set->vrt.arr_ptr), int_set->vrt.arr_size);
+			auto ind_arr = static_cast<uint32_t*>(int_set->ind.arr_ptr);
+			auto ind_arr_size = int_set->ind.arr_size;
+			auto vrt_arr_size = int_set->vrt.arr_size;
+
+			// Main logic for searching interior points
+			{
+				ecg_cl_mesh_t cl_m1 = allocate_cl_mesh(m1);
+				ecg_cl_mesh_t cl_m2 = allocate_cl_mesh(m2);
+
+				// Intersection data
+				umap<fp, uset<uint32_t, std::hash<uint32_t>>, ecg_hash_func> edge_to_faces_a;
+				umap<fp, uset<uint32_t, std::hash<uint32_t>>, ecg_hash_func> edge_to_faces_b;
+				umap<uint32_t, face_t, std::hash<uint32_t>> faces_from_mesh_a;
+				umap<uint32_t, face_t, std::hash<uint32_t>> faces_from_mesh_b;
+
+				uset<uint32_t, std::hash<uint32_t>> new_vertexes_a;
+				uset<uint32_t, std::hash<uint32_t>> new_vertexes_b;
+
+				// A little dangerous use reinterpret_cast, but easy work and process
+				std::span<face_t> b_faces(reinterpret_cast<face_t*>(m2->indexes), m2->indexes_size / 3);
+				std::span<face_t> a_faces(reinterpret_cast<face_t*>(m1->indexes), m1->indexes_size / 3);
+				std::span<vec3_base> b_vertexes(m2->vertexes, m2->vertexes_size);
+				std::span<vec3_base> a_vertexes(m1->vertexes, m1->vertexes_size);
+
+				for (size_t id = 0; id < a_faces.size(); ++id) {
+					auto face = a_faces[id];
+					edge_to_faces_a[make_edge(face.ind_1, face.ind_2)].insert(id);
+					edge_to_faces_a[make_edge(face.ind_2, face.ind_3)].insert(id);
+					edge_to_faces_a[make_edge(face.ind_3, face.ind_1)].insert(id);
+				}
+
+				for (size_t id = 0; id < b_faces.size(); ++id) {
+					auto face = b_faces[id];
+					edge_to_faces_b[make_edge(face.ind_1, face.ind_2)].insert(id);
+					edge_to_faces_b[make_edge(face.ind_2, face.ind_3)].insert(id);
+					edge_to_faces_b[make_edge(face.ind_3, face.ind_1)].insert(id);
+				}
+
+				for (size_t id = 0; id < vrt_arr_size; ++id) {
+					auto face_a = ind_arr[id * 2 + 0];
+					auto face_b = ind_arr[id * 2 + 1];
+					faces_from_mesh_a.insert({ face_a, a_faces[face_a] });
+					faces_from_mesh_b.insert({ face_b, b_faces[face_b] });
+				}
+
+				// Collect inner points of mesh B in mesh A
+				for (auto [id, face] : faces_from_mesh_b) {
+					vec3_base v0 = b_vertexes[face.ind_1];
+					vec3_base v1 = b_vertexes[face.ind_2];
+					vec3_base v2 = b_vertexes[face.ind_3];
+
+					if (check_is_point_in_mesh_gpu(cl_m1, v0)) new_vertexes_b.insert(face.ind_1);
+					if (check_is_point_in_mesh_gpu(cl_m1, v1)) new_vertexes_b.insert(face.ind_2);
+					if (check_is_point_in_mesh_gpu(cl_m1, v2)) new_vertexes_b.insert(face.ind_3);
+				}
+
+				// Collect inner points of mesh A in mesh B
+				for (auto [id, face] : faces_from_mesh_a) {
+					vec3_base v0 = a_vertexes[face.ind_1];
+					vec3_base v1 = a_vertexes[face.ind_2];
+					vec3_base v2 = a_vertexes[face.ind_3];
+
+					if (check_is_point_in_mesh_gpu(cl_m2, v0)) new_vertexes_a.insert(face.ind_1);
+					if (check_is_point_in_mesh_gpu(cl_m2, v1)) new_vertexes_a.insert(face.ind_2);
+					if (check_is_point_in_mesh_gpu(cl_m2, v2)) new_vertexes_a.insert(face.ind_3);
+				}
+
+				// Search other nearest points
+				add_inner_vertexes(b_vertexes, b_faces, cl_m1, edge_to_faces_b, faces_from_mesh_b, new_vertexes_b);
+				add_inner_vertexes(a_vertexes, a_faces, cl_m2, edge_to_faces_a, faces_from_mesh_a, new_vertexes_a);
+
+				// Fill data
+				{
+					uset<vec3_base, ecg_hash_func> all_vertexes;
+					for (auto id : new_vertexes_a) all_vertexes.insert(a_vertexes[id]);
+					for (auto id : new_vertexes_b) all_vertexes.insert(b_vertexes[id]);
+					for (auto int_vertex : intersection_points) all_vertexes.insert(int_vertex);
+					std::vector<vec3_base> temp_all_vertexes(all_vertexes.begin(), all_vertexes.end());
+
+					result = allocate_array<vec3_base>(all_vertexes.size());
+					safe_copy_to_arr(result, temp_all_vertexes);
+				}
+			}
+		}
+		catch (const std::exception& ex) {
+			spdlog::error(ex.what());
+			result = empty;
+		}
+		catch (...) {
+			spdlog::error(g_unknown_error);
+			result = empty;
+		}
+
+		return result;
+	}
+
+	ecg_internal_mesh_t compute_intersection(const ecg_mesh_t* m1, const ecg_mesh_t* m2, ecg_status* status) {
+		auto& mem_inst = ecg_mem::get_instance();
+		ecg_internal_mesh_t result;
+		ecg_array_t empty;
+		empty.arr_ptr = nullptr;
+		empty.arr_size = 0;
+		empty.handler = 0;
+
+		auto int_set_v1 = get_intersection_points(m1, m2, status);
+		auto vrt = add_interior_intersection_points(m1, m2, &int_set_v1, status);
+
+		mem_inst.delete_memory(int_set_v1.ind.handler);
+		mem_inst.delete_memory(int_set_v1.vrt.handler);
+		
+		result.indexes = empty;
+		result.vertexes = vrt;
+		return result;
 	}
 }

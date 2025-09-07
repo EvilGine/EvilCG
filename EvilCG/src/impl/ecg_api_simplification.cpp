@@ -13,7 +13,7 @@
 #include <help/ecg_geom.h>
 
 namespace ecg {
-	void center_point_simplification(const ecg_mesh_t* mesh, ecg_internal_mesh& result_mesh, ecg_status_handler& op_res) {
+	void center_point_simplification(const ecg_mesh_t* mesh, ecg_internal_mesh_t& result_mesh, ecg_status_handler& op_res) {
 		auto& ctrl = ecg_cl::get_instance();
 		auto& queue = ctrl.get_cmd_queue();
 		auto& context = ctrl.get_context();
@@ -56,13 +56,13 @@ namespace ecg {
 		op_res = queue.finish();
 	}
 
-	void qem_simplification(const ecg_mesh_t* mesh, ecg_internal_mesh& result_mesh, ecg_status_handler& op_res) {
+	void qem_simplification(const ecg_mesh_t* mesh, ecg_internal_mesh_t& result_mesh, ecg_status_handler& op_res) {
 		throw std::logic_error("Not implemented method"); // TODO: implement later this method
 	}
 
-	ecg_internal_mesh simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status) {
+	ecg_internal_mesh_t simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status) {
 		ecg_status_handler op_res;
-		ecg_internal_mesh result;
+		ecg_internal_mesh_t result;
 
 		try {
 			default_mesh_check(mesh, op_res, status);

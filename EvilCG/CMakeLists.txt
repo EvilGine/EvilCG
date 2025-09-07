@@ -36,7 +36,7 @@ set(SOURCE_FILES
 	./src/core/ecg_program.cpp
 
 	./src/help/ecg_overloads.cpp
-	./src/help/ecg_handler.cpp
+	./src/help/ecg_allocate.cpp
 	./src/help/ecg_hasher.cpp
 	./src/help/ecg_helper.cpp
 	./src/help/ecg_checks.cpp

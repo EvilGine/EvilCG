@@ -8,6 +8,8 @@ namespace ecg {
 
 	ECG_API struct ecg_handle_t {
 		uint64_t handler;
+
+		ecg_handle_t() : handler(0) {}
 	};
 
 	ECG_API struct ecg_array_t : public ecg_handle_t {
@@ -125,16 +127,12 @@ namespace ecg {
 		vec3_base* vertexes;
 		uint32_t vertexes_size;
 
-		vec3_base* normals;
-		uint32_t normals_size;
-
 		uint32_t* indexes;
 		uint32_t indexes_size;
 
 		ecg_mesh_t() : 
 			vertexes(nullptr), vertexes_size(0),
-			indexes(nullptr), indexes_size(0),
-			normals(nullptr), normals_size(0) 
+			indexes(nullptr), indexes_size(0)
 		{}
 	};
 
@@ -149,8 +147,9 @@ namespace ecg {
 		uint32_t b;
 	};
 
-	ECG_API struct ecg_internal_mesh {
-		
+	ECG_API struct ecg_internal_mesh_t {
+		ecg_array_t vertexes;
+		ecg_array_t indexes;
 	};
 
 	extern "C" vec3_base ECG_API add_vec(const vec3_base& lhs, const vec3_base& rhs);

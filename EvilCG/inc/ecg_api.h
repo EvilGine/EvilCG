@@ -58,6 +58,9 @@ namespace ecg {
 	ECG_API void init_logger(std::shared_ptr<spdlog::logger> ptr);
 #endif
 
+	ECG_API void cleanup(uint64_t handler);
+	ECG_API void cleanup_all();
+
 	/// <summary>
 	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
 	/// The AABB is a box aligned with the coordinate axes that encloses the mesh, providing 
@@ -246,7 +249,15 @@ namespace ecg {
 	/// <param name="m2"></param>
 	/// <param name="status"></param>
 	/// <returns></returns>
-	ECG_API intersection_set_t compute_intersection(const ecg_mesh_t* m1, const ecg_mesh_t* m2, ecg_status* status = nullptr);
+	ECG_API ecg_internal_mesh_t compute_intersection(const ecg_mesh_t* m1, const ecg_mesh_t* m2, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// Function for creating a convex hull from a set of 3D vertexes.
+	/// </summary>
+	/// <param name="vertexes"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
+	ECG_API ecg_internal_mesh_t create_convex_hull(const ecg_array_t vrt_arr, ecg_status* status = nullptr);
 
 	// [-] Not implemented
 	//ECG_API ecg_internal_mesh smooth_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);

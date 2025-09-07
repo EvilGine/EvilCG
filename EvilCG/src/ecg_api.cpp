@@ -18,6 +18,16 @@ namespace ecg {
 		g_ecg_logger = ptr;
 	}
 
+	void cleanup(uint64_t handler) {
+		auto& mem = ecg_mem::get_instance();
+		mem.delete_memory(handler);
+	}
+	
+	void cleanup_all() {
+		auto& mem = ecg_mem::get_instance();
+		mem.delete_all_memory();
+	}
+
 	vec3_base get_center(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 
@@ -789,6 +799,26 @@ namespace ecg {
 		}
 		catch (...) {
 			on_unknown_exception(op_res, status);
+		}
+
+		return result;
+	}
+
+	ecg_internal_mesh_t create_convex_hull(const ecg_array_t vrt_arr, ecg_status* status) {
+		ecg_internal_mesh_t result;
+		ecg_status_handler op_res;
+
+		if (vrt_arr.arr_ptr == nullptr || vrt_arr.arr_size == 0 || vrt_arr.arr_size < 4) {
+			if (status != nullptr) *status = ecg_status_code::INVALID_ARG;
+			return result;
+		}
+
+		try {
+			
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+			result = ecg_internal_mesh_t{};
 		}
 
 		return result;

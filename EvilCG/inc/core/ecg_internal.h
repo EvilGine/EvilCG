@@ -7,20 +7,19 @@
 namespace ecg {
 	struct ecg_cl_mesh_t {
 		cl::Buffer vertexes_buffer;
-		uint32_t vertexes_buffer_size;
+		size_t vertexes_buffer_size;
 		size_t vertexes_size;
 
 		cl::Buffer indexes_buffer;
-		uint32_t indexes_buffer_size;
+		size_t indexes_buffer_size;
 		size_t indexes_size;
-
-		cl::Buffer normals;
-		size_t normals_size;
 
 		bool is_valid = false;
 
 		ecg_cl_mesh_t() :
-			vertexes_size(0), indexes_size(0), normals_size(0)
+			vertexes_size(0), indexes_size(0), 
+			vertexes_buffer_size(0), indexes_buffer_size(0),
+			is_valid(false)
 		{ }
 	};
 }
