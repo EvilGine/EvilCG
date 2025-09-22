@@ -13,8 +13,8 @@
 #include <help/ecg_geom.h>
 
 namespace ecg {
-	void init_logger(std::shared_ptr<spdlog::logger> ptr) {
-		std::scoped_lock lock(g_ecg_set_logger_mutex);
+	void set_logger(std::shared_ptr<spdlog::logger> ptr) {
+		std::scoped_lock lock(g_ecg_logger_mutex);
 		g_ecg_logger = ptr;
 	}
 
@@ -58,7 +58,7 @@ namespace ecg {
 
 			const size_t max_work_group_size = ctrl.get_max_work_group_size();
 			cl::Program::Sources sources = { summ_vertexes_code };
-			ecg_program program(context, dev, sources);
+			auto program = ecg_program::get_program(context, dev, sources, summ_vertexes_name);
 
 			auto internal_summ = [&](const vec3_base* data, cl_int data_size) {
 				const float temp_groups = static_cast<float>(data_size) / max_work_group_size;
@@ -86,7 +86,7 @@ namespace ecg {
 				op_res = queue.enqueueWriteBuffer(vert_buffer, CL_FALSE, 0, vertexes_buffer_size, data);
 				op_res = queue.finish();
 
-				op_res = program.execute(
+				op_res = program->execute(
 					queue, summ_vertexes_name, global, local, 
 					data_size, vert_sz,
 					vert_buffer, acc_buffer,
@@ -115,14 +115,14 @@ namespace ecg {
 	void internal_compute_aabb(
 		cl::Context& context, cl::CommandQueue& queue, 
 		cl::Buffer& aabb_result, cl::Buffer& vertexes_buffer,
-		cl_int vert_size, ecg_program& program, ecg_status_handler& op_res,
+		cl_int vert_size, std::shared_ptr<ecg_program>& program, ecg_status_handler& op_res,
 		cl::NDRange global, cl::NDRange local, 
 		bounding_box& result_bb
 	) {
 		op_res = queue.enqueueWriteBuffer(aabb_result, CL_FALSE, 0, sizeof(bounding_box), &default_bb);
 		op_res = queue.finish();
 
-		op_res = program.execute(
+		op_res = program->execute(
 			queue, compute_aabb_name, global, local,
 			vertexes_buffer, vert_size,
 			aabb_result);
@@ -144,7 +144,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_aabb_code };
-			ecg_program program(context, dev, sources);
+			auto program = ecg_program::get_program(context, dev, sources, compute_aabb_name);
 
 			const size_t buffer_size = sizeof(mesh->vertexes[0]) * mesh->vertexes_size;
 			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, buffer_size);
@@ -196,7 +196,7 @@ namespace ecg {
 				compute_obb_code 
 			};
 
-			ecg_program compute_obb(context, dev, obb_sources);
+			auto compute_obb = ecg_program::get_program(context, dev, obb_sources, compute_obb_name);
 			cl::NDRange global = mesh->vertexes_size;
 			cl::NDRange local = cl::NullRange;
 
@@ -204,7 +204,7 @@ namespace ecg {
 			op_res = queue.enqueueWriteBuffer(cov_mat_buffer, CL_FALSE, 0, sizeof(mat3_base), &cov_mat);
 			op_res = queue.finish();
 
-			op_res = compute_obb.execute(
+			op_res = compute_obb->execute(
 				queue, compute_cov_mat_name, global, local,
 				vertex_buffer, vertex_size, center_cl,
 				cov_mat_buffer
@@ -229,7 +229,7 @@ namespace ecg {
 			op_res = queue.enqueueWriteBuffer(res_bb_buffer, CL_FALSE, 0, sizeof(bounding_box), &bb);
 			op_res = queue.finish();
 
-			op_res = compute_obb.execute(
+			op_res = compute_obb->execute(
 				queue, compute_obb_name, global, local,
 				vertex_buffer, vertex_size,
 				inv_transf_buffer, center_cl,
@@ -286,7 +286,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_surface_area_code };
-			ecg_program program(context, dev, sources);
+			auto program = ecg_program::get_program(context, dev, sources, compute_surface_area_name);
 
 			const cl_int vert_buffer_sz = sizeof(mesh->vertexes[0]) * mesh->vertexes_size;
 			const cl_int ind_buffer_sz = sizeof(mesh->indexes[0]) * mesh->indexes_size;
@@ -307,7 +307,7 @@ namespace ecg {
 			op_res = queue.enqueueFillBuffer(surf_area_buff, 0, 0, sizeof(float));
 			op_res = queue.finish();
 
-			op_res = program.execute(
+			op_res = program->execute(
 				queue, compute_surface_area_name, global, local,
 				vert_buffer, vert_arr_size,
 				ind_buffer, ind_arr_size,
@@ -375,7 +375,7 @@ namespace ecg {
 				compute_obb_code
 			};
 
-			ecg_program compute_obb(context, dev, obb_sources);
+			auto compute_obb = ecg_program::get_program(context, dev, obb_sources, compute_cov_mat_name);
 			cl::NDRange global = mesh->vertexes_size;
 			cl::NDRange local = cl::NullRange;
 
@@ -383,7 +383,7 @@ namespace ecg {
 			op_res = queue.enqueueWriteBuffer(cov_mat_buffer, CL_FALSE, 0, sizeof(mat3_base), &cov_mat);
 			op_res = queue.finish();
 
-			op_res = compute_obb.execute(
+			op_res = compute_obb->execute(
 				queue, compute_cov_mat_name, global, local,
 				vertex_buffer, vertex_size, center_cl,
 				cov_mat_buffer
@@ -419,7 +419,7 @@ namespace ecg {
 			cl::Buffer ind_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, ind_buffer_size);
 
 			cl::Program::Sources sources = { is_mesh_closed_code };
-			ecg_program is_mesh_close_program(context, dev, sources);
+			auto is_mesh_close_program = ecg_program::get_program(context, dev, sources, is_mesh_closed_name);
 			
 			op_res = queue.enqueueWriteBuffer(result_buffer, CL_FALSE, 0, sizeof(bool), &result);
 			op_res = queue.enqueueWriteBuffer(ind_buffer, CL_FALSE, 0, ind_buffer_size, mesh->indexes);
@@ -428,7 +428,7 @@ namespace ecg {
 			cl::NDRange global = cl::NDRange(mesh->indexes_size);
 			cl::NDRange local = cl::NullRange;
 
-			op_res = is_mesh_close_program.execute(
+			op_res = is_mesh_close_program->execute(
 				queue, is_mesh_closed_name, global, local,
 				ind_buffer, indexes_size,
 				result_buffer
@@ -464,9 +464,9 @@ namespace ecg {
 			cl::Program::Sources is_mesh_vertex_manifold_src = { is_mesh_vertexes_manifold_code };
 			cl::Program::Sources is_mesh_self_intersected_src = { is_mesh_self_intersected_code };
 
-			ecg_program is_mesh_closed_prog(context, dev, is_mesh_closed_src);
-			ecg_program is_mesh_vertexes_manifold_prog(context, dev, is_mesh_vertex_manifold_src);
-			ecg_program is_mesh_self_intersected_prog(context, dev, is_mesh_self_intersected_src);
+			auto is_mesh_closed_prog = ecg_program::get_program(context, dev, is_mesh_closed_src, is_mesh_closed_name);
+			auto is_mesh_self_intersected_prog = ecg_program::get_program(context, dev, is_mesh_self_intersected_src, is_mesh_self_intersected_name);
+			auto is_mesh_vertexes_manifold_prog = ecg_program::get_program(context, dev, is_mesh_vertex_manifold_src, is_mesh_vertexes_manifold_name);
 
 			cl_int vrt_size = sizeof(mesh->vertexes[0]) / sizeof(float);
 
@@ -491,20 +491,20 @@ namespace ecg {
 			cl::NDRange global = cl::NDRange(mesh->vertexes_size);
 			cl::NDRange local = cl::NullRange;
 
-			op_res = is_mesh_closed_prog.execute(
+			op_res = is_mesh_closed_prog->execute(
 				queue, is_mesh_closed_name, global, local,
 				ind_buffer, indexes_size,
 				is_closed_buffer
 			);
 
-			op_res = is_mesh_vertexes_manifold_prog.execute(
+			op_res = is_mesh_vertexes_manifold_prog->execute(
 				queue, is_mesh_vertexes_manifold_name, global, local,
 				ind_buffer, indexes_size, vertexes_size,
 				all_vertexes_manifold_buffer
 			);
 
 			global = mesh->indexes_size / 3;
-			op_res = is_mesh_self_intersected_prog.execute(
+			op_res = is_mesh_self_intersected_prog->execute(
 				queue, is_mesh_self_intersected_name, global, local,
 				vert_buffer, vertexes_size, ind_buffer, indexes_size,
 				vrt_size, is_self_intersected_buffer
@@ -538,7 +538,7 @@ namespace ecg {
 
 			cl_int vrt_size = sizeof(mesh->vertexes[0]) / sizeof(float);
 			cl::Program::Sources source = { is_mesh_self_intersected_code };
-			ecg_program is_self_intersected_prog(context, dev, source);
+			auto is_self_intersected_prog = ecg_program::get_program(context, dev, source, is_mesh_self_intersected_name);
 
 			cl_uint indexes_size = mesh->indexes_size;
 			cl_uint indexes_buffer_size = sizeof(mesh->indexes[0]) * mesh->indexes_size;
@@ -559,7 +559,7 @@ namespace ecg {
 				op_res = queue.enqueueWriteBuffer(is_self_intersected_buffer, CL_FALSE, 0, sizeof(bool), &result);
 				op_res = queue.finish();
 
-				op_res = is_self_intersected_prog.execute(
+				op_res = is_self_intersected_prog->execute(
 					queue, is_mesh_self_intersected_name, global, local,
 					vertexes_buffer, vertexes_size, indexes_buffer, indexes_size,
 					vrt_size, is_self_intersected_buffer
@@ -611,7 +611,7 @@ namespace ecg {
 			cl::Buffer old_indexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY,  old_indexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
 
 			cl::Program::Sources sources = { triangulate_mesh_code };
-			ecg_program program(context, dev, sources);
+			auto program = ecg_program::get_program(context, dev, sources, triangulate_mesh_name);
 
 			cl::NDRange global = old_faces_cnt;
 			cl::NDRange local  = cl::NullRange;
@@ -620,7 +620,7 @@ namespace ecg {
 			op_res = queue.enqueueWriteBuffer(old_indexes_buffer, CL_FALSE, 0, old_indexes_buffer_size, mesh->indexes);
 			op_res = queue.finish();
 
-			op_res = program.execute(
+			op_res = program->execute(
 				queue, triangulate_mesh_name, global, local,
 				old_indexes_buffer, old_indexes_size,
 				new_indexes_buffer, new_indexes_size,
@@ -653,7 +653,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_volume_code };
-			ecg_program program(context, dev, sources);
+			auto program = ecg_program::get_program(context, dev, sources, compute_volume_name);
 
 			cl_uint indexes_size = mesh->indexes_size;
 			cl_uint faces_cnt = mesh->indexes_size / 3;
@@ -676,7 +676,7 @@ namespace ecg {
 			op_res = queue.enqueueFillBuffer(volume_buffer, pattern, 0, volume_buffer_size);
 			op_res = queue.finish();
 
-			op_res = program.execute(
+			op_res = program->execute(
 				queue, compute_volume_name, global, local,
 				vertexes_buffer, vertexes_size,
 				indexes_buffer, indexes_size,
@@ -711,7 +711,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_faces_normals_code };
-			ecg_program program(context, dev, sources);
+			auto program = ecg_program::get_program(context, dev, sources, compute_faces_normals_name);
 
 			cl_uint indexes_size = mesh->indexes_size;
 			cl_uint faces_cnt = mesh->indexes_size / 3;
@@ -734,7 +734,7 @@ namespace ecg {
 			op_res = queue.enqueueFillBuffer(normals_buffer, pattern, 0, normals_buffer_size);
 			op_res = queue.finish();
 
-			op_res = program.execute(
+			op_res = program->execute(
 				queue, compute_faces_normals_name, global, local,
 				vertexes_buffer, vertexes_size,
 				indexes_buffer, indexes_size,
@@ -764,7 +764,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_vertex_normals_code };
-			ecg_program program(context, dev, sources);
+			auto program = ecg_program::get_program(context, dev, sources, compute_vertex_normals_name);
 
 			cl_uint indexes_size = mesh->indexes_size;
 			cl_uint vertexes_size = mesh->vertexes_size;
@@ -786,7 +786,7 @@ namespace ecg {
 			op_res = queue.enqueueFillBuffer(normals_buffer, pattern, 0, vertexes_buffer_size);
 			op_res = queue.finish();
 
-			op_res = program.execute(
+			op_res = program->execute(
 				queue, compute_vertex_normals_name, global, local,
 				vertexes_buffer, vertexes_size,
 				indexes_buffer, indexes_size,
@@ -814,7 +814,144 @@ namespace ecg {
 		}
 
 		try {
+			std::span<vec3_base> global_vertexes(static_cast<vec3_base*>(vrt_arr.arr_ptr), vrt_arr.arr_size);
+			std::set<vec3_base, ecg_less_func> global_unique_vertexes{ global_vertexes.begin(), global_vertexes.end() };
+			std::vector<vec3_base> initial_convex;
+			vec3_base initial_center_vertex;
+			initial_convex.resize(4);
+
+			vec3_base x_max_vrt = global_vertexes[0];
+			vec3_base x_min_vrt = global_vertexes[0];
+		
+			// Initial tetrahedron
+			{
+				// 1. Find the farthest points on the X-axis
+				for (auto& vrt : global_vertexes) {
+					if (x_max_vrt.x < vrt.x) x_max_vrt = vrt;
+					if (x_min_vrt.x > vrt.x) x_min_vrt = vrt;
+				}
+
+				initial_convex[0] = x_min_vrt;
+				initial_convex[1] = x_max_vrt;
+
+				// 2. Find third farthest from line point
+				vec3_base third_vertex = global_vertexes[0];
+				float third_vertex_distance = 0.0f;
+
+				for (auto& vrt : global_vertexes) {
+					float current_distance = distance(vrt, initial_convex[0], initial_convex[1]);
+					if (current_distance > third_vertex_distance) {
+						third_vertex_distance = current_distance;
+						third_vertex = vrt;
+					}
+				}
+
+				initial_convex[2] = third_vertex;
+
+				// 3. Find third farthest from surface point
+				vec3_base fourth_vertex = global_vertexes[0];
+				float fourth_vertex_distance = 0.0f;
 			
+				for (auto& vrt : global_vertexes) {
+					float current_distance = distance(vrt, initial_convex[0], initial_convex[1], initial_convex[2]);
+					if (current_distance > fourth_vertex_distance) {
+						fourth_vertex_distance = current_distance;
+						fourth_vertex = vrt;
+					}
+				}
+
+				initial_convex[3] = fourth_vertex;
+				for (auto& vrt : initial_convex) { initial_center_vertex += vrt; }
+				initial_center_vertex /= initial_convex.size();
+			}
+
+			struct convex_face_t {
+				vec3_base v0;
+				vec3_base v1;
+				vec3_base v2;
+				vec3_base normal;
+			};
+
+			std::list<convex_face_t> convex_hull_faces;
+			auto add_face = [&](vec3_base a, vec3_base b, vec3_base c, vec3_base center) {
+				convex_hull_faces.push_back({ a, b, c, normalize((a + b + c) / 3.0f - center) });
+			};
+
+			add_face(initial_convex[0], initial_convex[1], initial_convex[2], initial_center_vertex);
+			add_face(initial_convex[0], initial_convex[1], initial_convex[3], initial_center_vertex);
+			add_face(initial_convex[0], initial_convex[2], initial_convex[3], initial_center_vertex);
+			add_face(initial_convex[1], initial_convex[2], initial_convex[3], initial_center_vertex);
+
+			bool convex_hull_changed = true;
+			auto uvertexes_copy = global_unique_vertexes;
+			std::list<convex_face_t> new_convex_hull = convex_hull_faces;
+
+			// TODO: ‘актически вышло, что в данном алгоритме мы собираем самые отдаленные точки
+			// ѕо уму дальше от них нужно построить корректную топологию модели выпуклой оболочки
+			// Ќа данный момент топологи€ не верна
+			// 0. ѕока добавл€ли хот€ бы одного кандидата
+			while (convex_hull_changed) {
+				// 1. »терироватьс€ по полигонам
+				convex_hull_faces = new_convex_hull;
+				convex_hull_changed = false;
+				new_convex_hull.clear();
+				
+				for (auto& face : convex_hull_faces) {
+					bool candidate_was_found = false;
+					vec3_base new_candidate;
+					float max_dist = 0.0f;
+
+					// 1.1. ƒл€ каждого полигона искать самую отдаленную точку вдоль нормали
+					for (auto& vertex : uvertexes_copy) {
+						float dist = dot(face.normal, vertex - face.v0);
+						if (dist > max_dist) {
+							max_dist = dist;
+							new_candidate = vertex;
+							candidate_was_found = true;
+						}
+					}
+
+					// 1.2. ≈сли нашли такую точку, то замен€ем первую плоскость и добавл€ем новые
+					if (candidate_was_found) {
+						// 1.3.1. ƒобавить новые сформированные полигоны
+						// ”брать точку из просмотра (она теперь часть оболочки)
+						vec3_base new_center = face.v0 + face.v1 + face.v2 + new_candidate;
+						new_center /= 4;
+
+						add_face(face.v0, face.v1, new_candidate, new_center);
+						add_face(face.v1, face.v2, new_candidate, new_center);
+						add_face(face.v2, face.v0, new_candidate, new_center);
+						uvertexes_copy.erase(new_candidate);
+						convex_hull_changed = true;
+					}
+					else {
+						// 1.3.2. ѕросто добавить текущий полигон. 
+						// —остав просмотра точек мен€тьс€ не должен (нужно проверить)
+						new_convex_hull.push_back(face);
+					}
+				}
+			}
+			
+			// —формировать данные меша из данных выпуклой оболочки
+			std::vector<uint32_t> ch_indexes(new_convex_hull.size() * 3);
+			std::vector<vec3_base> ch_vertexes(new_convex_hull.size() * 3);
+
+			size_t id = 0;
+			for (auto it = new_convex_hull.begin(); it != new_convex_hull.end(); ++it, ++id) {
+				ch_vertexes[id * 3 + 0] = it->v0;
+				ch_vertexes[id * 3 + 1] = it->v1;
+				ch_vertexes[id * 3 + 2] = it->v2;
+
+				ch_indexes[id * 3 + 0] = id * 3 + 0;
+				ch_indexes[id * 3 + 1] = id * 3 + 1;
+				ch_indexes[id * 3 + 2] = id * 3 + 2;
+			}
+
+			result.vertexes = allocate_array<vec3_base>(ch_vertexes.size() * 3);
+			result.indexes = allocate_array<uint32_t>(ch_indexes.size() * 3);
+
+			std::memcpy(result.vertexes.arr_ptr, ch_vertexes.data(), ch_vertexes.size() * sizeof(vec3_base));
+			std::memcpy(result.indexes.arr_ptr, ch_indexes.data(), ch_indexes.size() * sizeof(uint32_t));
 		}
 		catch (...) {
 			on_unknown_exception(op_res, status);

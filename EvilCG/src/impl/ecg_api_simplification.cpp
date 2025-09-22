@@ -20,7 +20,7 @@ namespace ecg {
 		auto& dev = ctrl.get_device();
 
 		cl::Program::Sources sources = { center_point_simplification_code };
-		ecg_program program(context, dev, sources);
+		auto program = ecg_program::get_program(context, dev, sources, center_point_simplification_name);
 
 		cl_uint indexes_size = mesh->indexes_size;
 		cl_uint vertexes_size = mesh->vertexes_size;
@@ -44,7 +44,7 @@ namespace ecg {
 		op_res = queue.enqueueWriteBuffer(indexes_buffer, CL_FALSE, 0, indexes_buffer_size, mesh->indexes);
 		op_res = queue.finish();
 
-		op_res = program.execute(
+		op_res = program->execute(
 			queue, center_point_simplification_name, global, local,
 			vertexes_buffer, vertexes_size, indexes_buffer, indexes_size,
 			// Result mesh

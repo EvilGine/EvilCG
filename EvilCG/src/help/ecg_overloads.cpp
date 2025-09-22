@@ -29,6 +29,11 @@ namespace ecg {
 		return sub_vec(lhs, rhs);
 	}
 
+	vec3_base& operator/=(vec3_base& lhs, const float rhs) {
+		lhs = div_vec(lhs, rhs);
+		return lhs;
+	}
+
 	vec3_base operator/(const vec3_base& lhs, float rhs) {
 		return div_vec(lhs, rhs);
 	}

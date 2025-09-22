@@ -43,7 +43,7 @@ namespace ecg {
 			default_mesh_check(m2, op_res, status);
 
 			cl::Program::Sources sources = { intersect_two_meshes_code };
-			ecg_program program(context, device, sources);
+			auto program = ecg_program::get_program(context, device, sources, intersect_two_meshes_name);
 
 			cl_uint m1_faces_cnt = m1->indexes_size / 3;
 			std::vector<uint32_t> vrt_offsets;
@@ -83,7 +83,7 @@ namespace ecg {
 			op_res = queue.enqueueFillBuffer(vrt_offsets_buffer, pattern, 0, vrt_offsets_buffer_size);
 			op_res = queue.finish();
 
-			op_res = program.execute(
+			op_res = program->execute(
 				// in
 				queue, intersect_two_meshes_name, global, local,
 				m1_vertexes_buffer, m1_vrt_size,
@@ -129,7 +129,7 @@ namespace ecg {
 			op_res = queue.enqueueWriteBuffer(vrt_offsets_buffer, CL_FALSE, 0, vrt_offsets_buffer_size, vrt_offsets.data());
 			op_res = queue.finish();
 
-			op_res = program.execute(
+			op_res = program->execute(
 				// in
 				queue, intersect_two_meshes_name, global, local,
 				m1_vertexes_buffer, m1_vrt_size,
@@ -219,79 +219,8 @@ namespace ecg {
 		return false;
 	}
 
-	bool check_is_point_in_mesh_gpu(const ecg_cl_mesh_t& mesh, const vec3_base vertex) {
-		auto& ctrl = ecg_cl::get_instance();
-		auto queue = ctrl.get_cmd_queue();
-		auto context = ctrl.get_context();
-		auto device = ctrl.get_device();
-		ecg_status_handler op_res;
-
-		auto randf = [](float min, float max) {
-			return min + (max - min) * (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX));
-		};
-
-		auto base = normalize({ randf(-1,1), randf(-1,1), randf(-1,1) });
-		std::array<vec3_base, 4> directions = {
-				base , // Random vector
-				normalize(vec3_base { 1.0f, 0.0f, 0.0f } + base), // X-axis
-				normalize(vec3_base { 0.0f, 1.0f, 0.0f } + base), // Y-axis
-				normalize(vec3_base { 0.0f, 0.0f, 1.0f } + base)  // Z-axis
-		};
-
-		try {
-			if (mesh.indexes_buffer == cl::Buffer()) return false;
-			if (mesh.vertexes_buffer == cl::Buffer()) return false;
-
-			if (mesh.vertexes_size == 0) return false;
-			if (mesh.indexes_size == 0 || mesh.indexes_size % 3 != 0) return false;
-
-			cl_uint vertexes_buffer_size = mesh.vertexes_size * sizeof(vec3_base);
-			cl_uint indexes_buffer_size = mesh.indexes_size * sizeof(uint32_t);
-			cl::Buffer int_buffer = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof(cl_uint));
-
-			cl::NDRange local = cl::NullRange;
-			cl::NDRange global = mesh.indexes_size / 3;
-
-			cl::Program::Sources sources = { check_is_point_in_mesh_code };
-			ecg_program program(context, device, sources);
-
-			int votes = 0;
-			for (auto dir : directions) {
-				cl_int intersections = 0;
-				queue.enqueueWriteBuffer(int_buffer, CL_FALSE, 0, sizeof(intersections), &intersections);
-				queue.finish();
-
-				op_res = program.execute(
-					queue, check_is_point_in_mesh_name, global, local,
-					mesh.vertexes_buffer, (cl_uint)mesh.vertexes_size,
-					mesh.indexes_buffer, (cl_uint)mesh.indexes_size,
-					(cl_float)dir.x, (cl_float)dir.y, (cl_float)dir.z,
-					(cl_float)vertex.x, (cl_float)vertex.y, (cl_float)vertex.z,
-					int_buffer
-				);
-				queue.finish();
-
-				queue.enqueueReadBuffer(int_buffer, CL_FALSE, 0, sizeof(intersections), &intersections);
-				queue.finish();
-
-				if (intersections % 2 == 1)
-					++votes;
-			}
-
-			return votes >= min_votes_for_inner_vertex;
-		}
-		catch (const std::exception& ex) {
-			spdlog::error(ex.what());
-		}
-		catch (...) {
-			spdlog::error(g_unknown_error);
-		}
-
-		return false;
-	}
-
 	void add_inner_vertexes(
-		const std::span<vec3_base>& vertexes, const std::span<face_t>& faces, const ecg_cl_mesh_t& cl_mesh,
+		const std::span<vec3_base>& vertexes, const std::span<face_t>& faces, const ecg_mesh_t* mesh,
 		const umap<fp, uset<uint32_t, std::hash<uint32_t>>, ecg_hash_func>& edge_to_faces,
 		const umap<uint32_t, face_t, std::hash<uint32_t>>& faces_from_mesh,
 		uset<uint32_t, std::hash<uint32_t>>& new_vertexes
@@ -347,17 +276,17 @@ namespace ecg {
 				vec3_base v1 = vertexes[face.ind_2];
 				vec3_base v2 = vertexes[face.ind_3];
 
-				if (check_is_point_in_mesh_gpu(cl_mesh, v0)) {
+				if (check_is_point_in_mesh(mesh, v0)) {
 					new_vertexes.insert(face.ind_1);
 					add_new_vertex = true;
 				}
 
-				if (check_is_point_in_mesh_gpu(cl_mesh, v1)) {
+				if (check_is_point_in_mesh(mesh, v1)) {
 					new_vertexes.insert(face.ind_2);
 					add_new_vertex = true;
 				}
 
-				if (check_is_point_in_mesh_gpu(cl_mesh, v2)) {
+				if (check_is_point_in_mesh(mesh, v2)) {
 					new_vertexes.insert(face.ind_3);
 					add_new_vertex = true;
 				}
@@ -395,9 +324,6 @@ namespace ecg {
 
 			// Main logic for searching interior points
 			{
-				ecg_cl_mesh_t cl_m1 = allocate_cl_mesh(m1);
-				ecg_cl_mesh_t cl_m2 = allocate_cl_mesh(m2);
-
 				// Intersection data
 				umap<fp, uset<uint32_t, std::hash<uint32_t>>, ecg_hash_func> edge_to_faces_a;
 				umap<fp, uset<uint32_t, std::hash<uint32_t>>, ecg_hash_func> edge_to_faces_b;
@@ -440,9 +366,9 @@ namespace ecg {
 					vec3_base v1 = b_vertexes[face.ind_2];
 					vec3_base v2 = b_vertexes[face.ind_3];
 
-					if (check_is_point_in_mesh_gpu(cl_m1, v0)) new_vertexes_b.insert(face.ind_1);
-					if (check_is_point_in_mesh_gpu(cl_m1, v1)) new_vertexes_b.insert(face.ind_2);
-					if (check_is_point_in_mesh_gpu(cl_m1, v2)) new_vertexes_b.insert(face.ind_3);
+					if (check_is_point_in_mesh(m1, v0)) new_vertexes_b.insert(face.ind_1);
+					if (check_is_point_in_mesh(m1, v1)) new_vertexes_b.insert(face.ind_2);
+					if (check_is_point_in_mesh(m1, v2)) new_vertexes_b.insert(face.ind_3);
 				}
 
 				// Collect inner points of mesh A in mesh B
@@ -451,14 +377,14 @@ namespace ecg {
 					vec3_base v1 = a_vertexes[face.ind_2];
 					vec3_base v2 = a_vertexes[face.ind_3];
 
-					if (check_is_point_in_mesh_gpu(cl_m2, v0)) new_vertexes_a.insert(face.ind_1);
-					if (check_is_point_in_mesh_gpu(cl_m2, v1)) new_vertexes_a.insert(face.ind_2);
-					if (check_is_point_in_mesh_gpu(cl_m2, v2)) new_vertexes_a.insert(face.ind_3);
+					if (check_is_point_in_mesh(m2, v0)) new_vertexes_a.insert(face.ind_1);
+					if (check_is_point_in_mesh(m2, v1)) new_vertexes_a.insert(face.ind_2);
+					if (check_is_point_in_mesh(m2, v2)) new_vertexes_a.insert(face.ind_3);
 				}
 
 				// Search other nearest points
-				add_inner_vertexes(b_vertexes, b_faces, cl_m1, edge_to_faces_b, faces_from_mesh_b, new_vertexes_b);
-				add_inner_vertexes(a_vertexes, a_faces, cl_m2, edge_to_faces_a, faces_from_mesh_a, new_vertexes_a);
+				add_inner_vertexes(b_vertexes, b_faces, m1, edge_to_faces_b, faces_from_mesh_b, new_vertexes_b);
+				add_inner_vertexes(a_vertexes, a_faces, m2, edge_to_faces_a, faces_from_mesh_a, new_vertexes_a);
 
 				// Fill data
 				{
@@ -495,12 +421,8 @@ namespace ecg {
 
 		auto int_set_v1 = get_intersection_points(m1, m2, status);
 		auto vrt = add_interior_intersection_points(m1, m2, &int_set_v1, status);
+		auto convex = create_convex_hull(vrt, status);
 
-		mem_inst.delete_memory(int_set_v1.ind.handler);
-		mem_inst.delete_memory(int_set_v1.vrt.handler);
-		
-		result.indexes = empty;
-		result.vertexes = vrt;
-		return result;
+		return convex;
 	}
 }

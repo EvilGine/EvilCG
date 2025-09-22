@@ -32,6 +32,13 @@ namespace ecg {
 	}
 
 	bool ecg_compare_func::operator()(const vec3_base& a, const vec3_base& b) const noexcept {
-		return compare_vec3_base(a, b);
+		return compare_vec3_base(a, b, default_eps);
+	}
+
+	bool ecg_less_func::operator()(const vec3_base& a, const vec3_base& b) const noexcept {
+		if (std::abs(a.x - b.x) > ecg::default_eps) return a.x < b.x;
+		if (std::abs(a.y - b.y) > ecg::default_eps) return a.y < b.y;
+		if (std::abs(a.z - b.z) > ecg::default_eps) return a.z < b.z;
+		return false;
 	}
 }

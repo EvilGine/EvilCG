@@ -8,6 +8,7 @@ namespace ecg {
 	vec3_base operator-(const vec3_base& lhs, const vec3_base& rhs);
 	vec3_base operator/(const vec3_base& lhs, const float rhs);
 	vec3_base operator*(const vec3_base& lhs, const float rhs);
+	vec3_base& operator/=(vec3_base& lhs, const float rhs);
 
 	bool operator==(const full_bounding_box& lval, const full_bounding_box& rval);
 	bool operator==(const bounding_box& lval, const bounding_box& rval);

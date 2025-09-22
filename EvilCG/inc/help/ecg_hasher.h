@@ -16,6 +16,11 @@ namespace ecg {
 		bool operator()(const vec3_base& a, const vec3_base& b) const noexcept;
 	};
 
+	class ecg_less_func {
+	public:
+		bool operator()(const vec3_base& a, const vec3_base& b) const noexcept;
+	 };
+
 	template <typename T> int sign(T val) {
 		return (T(0) < val) - (val < T(0));
 	}

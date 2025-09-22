@@ -19,6 +19,9 @@ namespace ecg {
 
     float dot(const vec3_base& v1, const vec3_base& v2);
     float length(const vec3_base& vec);
+
+    float distance(vec3_base pt, vec3_base s0, vec3_base s1, vec3_base s2);
+    float distance(vec3_base pt, vec3_base v0, vec3_base v1);
 }
 
 #endif

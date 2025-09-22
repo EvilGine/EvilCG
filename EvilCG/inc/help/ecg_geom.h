@@ -4,7 +4,7 @@
 #include <ecg_global.h>
 
 namespace ecg {
-	constexpr float epsilon = 1e-6f;
+	constexpr float g_epsilon = 1e-6f;
 
 	ECG_API struct ecg_handle_t {
 		uint64_t handler;
@@ -157,8 +157,8 @@ namespace ecg {
 	extern "C" vec3_base ECG_API mul_vec(const vec3_base& lhs, const float rhs);
 	extern "C" vec3_base ECG_API div_vec(const vec3_base& lhs, float rhs);
 
-	extern "C" bool ECG_API compare_vec3_base(const vec3_base& lval, const vec3_base& rval);
-	extern "C" bool ECG_API compare_bounding_boxes(const bounding_box& lval, const bounding_box& rval);
+	extern "C" bool ECG_API compare_bounding_boxes(const bounding_box& lval, const bounding_box& rval, const float epsilon = g_epsilon);
+	extern "C" bool ECG_API compare_vec3_base(const vec3_base& lval, const vec3_base& rval, const float epsilon = g_epsilon);
 	extern "C" bool ECG_API compare_full_bb(const full_bounding_box& lval, const full_bounding_box& rval);
 	extern "C" bool ECG_API compare_mat3(const mat3_base& lval, const mat3_base& rval);
 

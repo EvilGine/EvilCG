@@ -1,6 +1,19 @@
 #include <core/ecg_program.h>
 
 namespace ecg {
+	std::shared_ptr<ecg_program> ecg_program::get_program(cl::Context& cont, cl::Device& dev, cl::Program::Sources& srcs, std::string prog_name) {
+		static std::unordered_map<std::string, std::shared_ptr<ecg_program>> g_cached_programs;
+		auto it = g_cached_programs.find(prog_name);
+
+		if (it != g_cached_programs.end()) return it->second;
+		else {
+			auto prog = std::make_shared<ecg_program>(cont, dev, srcs);
+			g_cached_programs[prog_name] = prog;
+		}
+
+		return g_cached_programs[prog_name];
+	}
+
 	ecg_program::ecg_program(cl::Context& cont, cl::Device& dev, cl::Program::Sources& srcs) {
 		m_is_built = true;
 		try {

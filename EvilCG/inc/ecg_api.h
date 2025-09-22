@@ -15,7 +15,10 @@
 	#include <spdlog/spdlog.h>
 #endif
 
-namespace ecg {	
+#ifdef __cplusplus
+namespace ecg	
+#endif
+{
 	/// <summary>
 	/// Compare results between two meshes.
 	/// </summary>
@@ -53,12 +56,22 @@ namespace ecg {
 
 #if defined(ECG_USE_SPDLOG)
 	/// <summary>
-	/// Init logger for more informations
+	/// Init logger for more information
 	/// </summary>
-	ECG_API void init_logger(std::shared_ptr<spdlog::logger> ptr);
+	ECG_API void set_logger(std::shared_ptr<spdlog::logger> ptr);
 #endif
 
+	/// <summary>
+	/// Cleanup memory by handler.
+	/// </summary>
+	/// <param name="handler"></param>
+	/// <returns></returns>
 	ECG_API void cleanup(uint64_t handler);
+
+	/// <summary>
+	/// Cleanup all memory that was allocated in library.
+	/// </summary>
+	/// <returns></returns>
 	ECG_API void cleanup_all();
 
 	/// <summary>

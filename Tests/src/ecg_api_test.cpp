@@ -774,12 +774,35 @@ namespace ecg_intersection {
 		ASSERT_TRUE(res.vertexes.arr_ptr != nullptr);
 		ASSERT_TRUE(res.vertexes.arr_size != 0);
 		ASSERT_TRUE(res.vertexes.handler != 0);
+
+		ecg::cleanup(res.vertexes.handler);
+		ecg::cleanup(res.indexes.handler);
 	}
 }
 
 namespace ecg_simplifiation {
-	TEST(ecg_api, center_point_simplification) {
-		// TODO: implement tests
+	TEST(ecg_api, convex_hull) {
+		auto& mesh_inst = ecg_meshes::get_instance();
+		ecg::ecg_mesh_t convex_hull_1 = mesh_inst.loaded_meshes_by_name["convex_hull_1.obj"]->mesh;
+		
+		ecg::ecg_status status = ecg::ecg_status_code::SUCCESS;
+		custom_timer_t timer;
+
+		ecg::ecg_array_t vertexes;
+		vertexes.arr_ptr = convex_hull_1.vertexes;
+		vertexes.arr_size = convex_hull_1.vertexes_size;
+
+		timer.start();
+		auto convex_hull = ecg::create_convex_hull(vertexes, &status);
+		timer.end();
+
+		ecg::ecg_mesh_t mesh;
+		mesh.vertexes = static_cast<ecg::vec3_base*>(convex_hull.vertexes.arr_ptr);
+		mesh.indexes = static_cast<uint32_t*>(convex_hull.indexes.arr_ptr);
+		mesh.vertexes_size = convex_hull.vertexes.arr_size;
+		mesh.indexes_size = convex_hull.indexes.arr_size;
+
+		ecg::save_ecg_mesh(&mesh, "res_convex_hull_1.obj", ecg::ecg_file_type::ECG_OBJ_FILE, &status);
 	}
 
 	//TEST(ecg_api, qem_simplification) {

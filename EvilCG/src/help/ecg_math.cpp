@@ -103,4 +103,22 @@ namespace ecg {
             x_norm.z, y_norm.z, z_norm.z
         };
     }
+
+    float distance(vec3_base pt, vec3_base s0, vec3_base s1, vec3_base s2) {
+        vec3_base s0s1 = s1 - s0;
+        vec3_base s0s2 = s2 - s0;
+
+        vec3_base normal = cross(s0s1, s0s2);
+        float distance = abs(dot(normal, pt - s0)) / length(normal);
+        return distance;
+    }
+    
+    float distance(vec3_base pt, vec3_base v0, vec3_base v1) {
+        vec3_base ap = pt - v0;
+        vec3_base line_dir = v1 - v0;
+
+        vec3_base cross_prod = cross(ap, line_dir);
+        float dist = length(cross_prod) / length(line_dir);
+        return dist;
+    }
 }
