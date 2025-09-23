@@ -32,18 +32,18 @@ void ecg_meshes::save_mesh_to_obj(const ecg::ecg_mesh_t* mesh, std::string obj_f
         }
 
         // Write normals
-        for (uint32_t i = 0; i < mesh->normals_size; ++i) {
-            file << "vn " << to_string(mesh->normals[i]) << std::endl;
-        }
+        //for (uint32_t i = 0; i < mesh->normals_size; ++i) {
+        //    file << "vn " << to_string(mesh->normals[i]) << std::endl;
+        //}
 
         // Write faces
         for (uint32_t i = 0; i < mesh->indexes_size; i += 3) {
             file << "f ";
             for (uint32_t j = 0; j < 3; ++j) {
                 file << (mesh->indexes[i + j] + 1);
-                if (mesh->normals_size > 0) {
-                    file << "//" << (mesh->indexes[i + j] + 1);
-                }
+                //if (mesh->normals_size > 0) {
+                //    file << "//" << (mesh->indexes[i + j] + 1);
+                //}
                 file << " ";
             }
             file << std::endl;
@@ -60,20 +60,20 @@ std::string ecg_meshes::to_string(const ecg::vec3_base& vec) {
 void ecg_meshes::init_mesh(ecg::ecg_mesh_t* mesh, size_t size) {
     if (mesh == nullptr) return;
 
-    mesh->vertexes_size = mesh->normals_size = size;
+    //mesh->vertexes_size = mesh->normals_size = size;
 
     size_t triangle_count = size / 3;
     size_t index_count = triangle_count * 3;
     mesh->indexes_size = index_count;
 
     mesh->vertexes = new ecg::vec3_base[size];
-    mesh->normals = new ecg::vec3_base[size];
+    //mesh->normals = new ecg::vec3_base[size];
     mesh->indexes = new uint32_t[index_count];
 
     uint32_t cnt = 1;
     for (uint32_t i = 0; i < size; ++i) {
         mesh->vertexes[i] = ecg::vec3_base(cnt, cnt * 2.0f, cnt * 3.0f);
-        mesh->normals[i] = ecg::vec3_base(0.0f, 1.0f, 0.0f);
+        //mesh->normals[i] = ecg::vec3_base(0.0f, 1.0f, 0.0f);
         ++cnt;
     }
 
@@ -90,8 +90,8 @@ void ecg_meshes::delete_mesh(ecg::ecg_mesh_t* mesh) {
     delete[] mesh->vertexes;
     mesh->vertexes_size = 0;
 
-    delete[] mesh->normals;
-    mesh->normals_size = 0;
+    //delete[] mesh->normals;
+    //mesh->normals_size = 0;
 
     delete[] mesh->indexes;
     mesh->indexes_size = 0;

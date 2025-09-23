@@ -1,31 +1,57 @@
 #include <core/ecg_host_ctrl.h>
 
 namespace ecg {
+	bool ecg_cl::is_init() const {
+		return m_is_initialized;
+	}
+
+	ecg_cl::~ecg_cl() {
+		release_controller(false);
+	}
+
+	void ecg_cl::release_controller(bool log) noexcept {
+		if (m_is_initialized) {
+			try {
+				m_cmd_queue.finish();
+			}
+			catch (const std::exception& ex) {
+				if (log) spdlog::error(ex.what());
+			}
+
+			m_cmd_queue = cl::CommandQueue();
+			m_main_device = cl::Device();
+			m_context = cl::Context();
+			
+			if(log) spdlog::info("Controller was released");
+			m_is_initialized = false;
+		}
+	}
+
 	const std::unordered_map<std::string, size_t> g_vendor_score = {
 		{"NVIDIA", 1'000'000},
 		{"AMD", 900'000},
 		{"Intel", 0}
 	};
 
-	cl::Context& ecg_host_ctrl::get_context() {
+	cl::Context& ecg_cl::get_context() {
 		return m_context;
 	}
 
-	cl::Device& ecg::ecg_host_ctrl::get_device() {
+	cl::Device& ecg::ecg_cl::get_device() {
 		return m_main_device;
 	}
 
-	cl::CommandQueue& ecg_host_ctrl::get_cmd_queue() {
+	cl::CommandQueue& ecg_cl::get_cmd_queue() {
 		return m_cmd_queue;
 	}
 
-	cl_int ecg_host_ctrl::get_max_work_group_size() const {
+	cl_int ecg_cl::get_max_work_group_size() const {
 		if (m_main_device == cl::Device()) return 0;
 		return m_main_device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
 	}
 
 	template <std::ranges::range Iterable>
-	cl::Device ecg_host_ctrl::choose_device(const Iterable& devices) {
+	cl::Device ecg_cl::choose_device(const Iterable& devices) {
 		cl::Device main_device;
 		size_t curr_score = 0;
 		size_t max_score = 0;
@@ -41,7 +67,7 @@ namespace ecg {
 		return main_device;
 	}
 
-	size_t ecg_host_ctrl::get_device_score(const cl::Device& dev) {
+	size_t ecg_cl::get_device_score(const cl::Device& dev) {
 		cl_bool is_compute_available = dev.getInfo<CL_DEVICE_COMPILER_AVAILABLE>();
 		cl_bool is_available = dev.getInfo<CL_DEVICE_AVAILABLE>();
 
@@ -53,7 +79,7 @@ namespace ecg {
 		return score;
 	}
 
-	cl::Platform ecg_host_ctrl::choose_platform() {
+	cl::Platform ecg_cl::choose_platform() {
 		std::vector<cl::Platform> all_platforms;
 		cl::Platform::get(&all_platforms);
 
@@ -65,7 +91,7 @@ namespace ecg {
 		}
 	}
 
-	cl::Device ecg_host_ctrl::find_best_device() {
+	cl::Device ecg_cl::find_best_device() {
 		std::unordered_map<cl_platform_id, cl::vector<cl::Device>> devices_of_platform;
 		std::vector<cl::Platform> platforms;
 
@@ -93,7 +119,7 @@ namespace ecg {
 		return score_with_device.device;
 	}
 
-	size_t ecg_host_ctrl::get_vendor_bonus(const std::string& vendor) {
+	size_t ecg_cl::get_vendor_bonus(const std::string& vendor) {
 		size_t vendor_bonus = 0;
 		for (const auto& known_vendor : g_vendor_score) {
 			if (vendor.find(known_vendor.first) != std::string::npos) {
@@ -104,7 +130,7 @@ namespace ecg {
 		return vendor_bonus;
 	}
 
-	cl_int ecg_host_ctrl::default_init(int device_id) {
+	cl_int ecg_cl::default_init(int device_id) {
 		cl_int op_res = CL_SUCCESS;
 		cl_uint num_platforms = 0;
 		m_is_initialized = false;
@@ -133,12 +159,12 @@ namespace ecg {
 		return op_res;
 	}
 
-	ecg_host_ctrl::ecg_host_ctrl(int device_id) {
+	ecg_cl::ecg_cl(int device_id) {
 		static std::once_flag m_init_flag;
 		std::call_once(m_init_flag, [this, device_id] { default_init(device_id); });
 	}
 
-	std::list<device_t> ecg_host_ctrl::get_available_devices() {
+	std::list<device_t> ecg_cl::get_available_devices() {
 		std::vector<cl::Platform> platforms;
 		cl::Platform::get(&platforms);
 		std::list<device_t> result;
@@ -159,8 +185,8 @@ namespace ecg {
 		return result;
 	}
 
-	ecg_host_ctrl& ecg_host_ctrl::get_instance(int device_id) {
-		static ecg_host_ctrl m_instance(device_id);
+	ecg_cl& ecg_cl::get_instance(int device_id) {
+		static ecg_cl m_instance(device_id);
 		return m_instance;
 	}
 }

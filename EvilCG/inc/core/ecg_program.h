@@ -1,6 +1,6 @@
 #ifndef ECG_PROGRAM_H
 #define ECG_PROGRAM_H
-#include <CL/opencl.hpp>
+#include <core/ecg_cl_version.h>
 #include <ecg_api_define.h>
 #include <ecg_global.h>
 
@@ -16,7 +16,7 @@ namespace ecg {
 		std::is_same_v<T, cl_float4> || std::is_same_v<T, cl_float8> ||
 		std::is_same_v<T, cl_half> || std::is_same_v<T, cl_mem> ||
 		std::is_same_v<T, cl_sampler> || std::is_same_v<T, cl_event> ||
-		std::is_same_v<T, cl::Buffer>;
+		std::is_same_v<T, cl::Buffer> || std::is_same_v<T, std::nullptr_t>;
 
 	/// <summary>
 	/// Program wrapper for easy work with OpenCL program.
@@ -25,7 +25,9 @@ namespace ecg {
 	public:
 		virtual ~ecg_program() = default;
 		ecg_program(const ecg_program& prog) = delete;
+
 		ecg_program(cl::Context& cont, cl::Device& dev, cl::Program::Sources& srcs);
+		static std::shared_ptr<ecg_program> get_program(cl::Context& cont, cl::Device& dev, cl::Program::Sources& srcs, std::string prog_name);
 
 		const bool is_program_was_built() const;
 		cl::Program get_program() const;
@@ -41,7 +43,7 @@ namespace ecg {
 			auto set_arg_with_log = [&](cl::Kernel& kernel, auto& arg) {
 				using ArgType = std::decay_t<decltype(arg)>;
 				static_assert(is_opencl_type<ArgType>,
-					"Argument type is not supported. Only OpenCL types are allowed (e.g., cl_int, cl_uint, cl_float)."
+					"Argument type is not supported. Only OpenCL types are allowed (e.g., cl_int, cl_uint, cl_float) except nullptr."
 				);
 				return kernel.setArg(arg_index++, arg);
 			};

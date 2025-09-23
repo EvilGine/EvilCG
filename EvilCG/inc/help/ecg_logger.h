@@ -10,7 +10,12 @@
 
 namespace ecg {
 	extern std::shared_ptr<spdlog::logger> g_ecg_logger;
-	extern std::mutex g_ecg_set_logger_mutex;
+	extern const std::string g_unknown_error;
+	extern std::mutex g_ecg_logger_mutex;
+
+	void info(const std::string& msg);
+	void error(const std::string& msg);
+	void warning(const std::string& msg);
 }
 
 #endif

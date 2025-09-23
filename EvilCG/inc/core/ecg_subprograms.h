@@ -1181,6 +1181,196 @@ namespace ecg {
 				}
 			}
 		);
+
+		const std::string ray_cast_func =
+		NAME_OF(
+			inline bool ray_intersects_triangle(float3 p, float3 dir, float3 s0, float3 s1, float3 s2, float3* intersect) {
+				const float epsilon = 1E-06f;
+				float3 ab = s1 - s0;
+				float3 cb = s2 - s0;
+
+				float3 normal = cross(ab, cb);
+
+				float d = -dot(normal, s0);
+				float denom = dot(normal, dir);
+				if (fabs(denom) < epsilon) return false;
+
+				float t = -(dot(normal, p) + d) / denom;
+				if (t < 0.0f) return false;
+
+				*intersect = p + dir * t;
+				return true;
+			}
+		);
+
+		const std::string check_is_point_in_face_func =
+			NAME_OF(
+				bool check_is_point_in_face( \n
+					float3 s0, float3 s1, float3 s2, \n
+					float3 p \n
+				) { \n
+					float3 v0 = s1 - s0; \n
+					float3 v1 = s2 - s0; \n
+					float3 v2 = p - s0; \n\n
+
+					float d00 = dot(v0, v0); float d01 = dot(v0, v1); \n
+					float d11 = dot(v1, v1); float d20 = dot(v2, v0); \n
+					float d21 = dot(v2, v1); \n\n
+
+					float denom = d00 * d11 - d01 * d01; \n
+					if (fabs(denom) < 1e-6f) return false;
+
+					float v = (d11 * d20 - d01 * d21) / denom; \n
+					float w = (d00 * d21 - d01 * d20) / denom; \n
+					float u = 1.0f - v - w; \n\n
+
+					const float epsilon = 1e-6f;
+					return
+						u >= -epsilon && v >= -epsilon && w >= -epsilon &&
+						u <= 1.0f + epsilon && v <= 1.0f + epsilon && w <= 1.0f + epsilon;
+				}; \n\n
+			);
+
+		const std::string intersect_face_and_line_func =
+			enable_atomics_def +
+			NAME_OF(
+				void intersect_face_and_line( \n
+					float3 s0, float3 s1, float3 s2, \n
+					float3 p0, float3 p1, \n\n
+
+					__global volatile int* vrt_offsets, int vrt_offsets_size, \n
+					__global volatile float* intersect, long intersect_size, \n
+					__global volatile unsigned int* int_faces, long int_faces_size, \n
+					int f1_id, int f2_id, int* intersect_offset \n
+				) { \n
+					float t_param = -1.0f; \n
+					float3 surf_norm = cross(s1 - s0, s2 - s0); \n
+					float d = -dot(surf_norm, s0); \n
+					float3 line_dir = p1 - p0; \n\n
+
+					float denom = dot(surf_norm, line_dir); \n
+					if (fabs(denom) < 1e-04f) { \n
+						float plane_p0 = dot(surf_norm, p0) + d; \n
+						float plane_p1 = dot(surf_norm, p1) + d; \n\n
+
+						if (fabs(plane_p0) < 1e-6f && fabs(plane_p1) < 1e-6f) { \n
+							bool p0_check = check_is_point_in_face(s0, s1, s2, p0); \n
+							bool p1_check = check_is_point_in_face(s0, s1, s2, p1); \n\n
+
+							// TODO: think about whether it's worth checking more cases
+							if (!p0_check && !p1_check) { \n
+								float3 center = (p0 + p1) / 2.0f; \n
+								check_is_point_in_face(s0, s1, s2, center); \n
+								// Process or not?
+							} \n
+						} \n
+						else { \n
+							return; \n
+						} \n
+					} \n
+					else { \n
+						t_param = -(d + dot(surf_norm, p0)) / denom; \n
+						if (t_param >= 0.0f && t_param <= 1.0f) { \n
+							float3 potential_intersection = p0 + line_dir * t_param; \n\n
+
+							if (check_is_point_in_face(s0, s1, s2, potential_intersection)) { \n
+								if (intersect == NULL) { \n
+									atomic_add(&vrt_offsets[f1_id], 1); \n
+								} \n
+								else { \n
+									intersect[((*intersect_offset) * 3) + 0] = potential_intersection.x; \n
+									intersect[((*intersect_offset) * 3) + 1] = potential_intersection.y; \n
+									intersect[((*intersect_offset) * 3) + 2] = potential_intersection.z; \n
+									int_faces[((*intersect_offset) * 2) + 0] = f1_id; \n
+									int_faces[((*intersect_offset) * 2) + 1] = f2_id; \n
+									*intersect_offset += 1; \n\n
+								} \n
+							} \n
+						} \n
+					} \n
+				};
+			);
+
+		const std::string intersect_two_meshes_name = "intersect_two_meshes";
+		const std::string intersect_two_meshes_code =
+			check_is_point_in_face_func +
+			intersect_face_and_line_func +
+			get_vertex +
+			NAME_OF(
+				__kernel void intersect_two_meshes(
+					__global float * m1_vertexes, int m1_vertexes_size, \n
+					__global float * m2_vertexes, int m2_vertexes_size, \n \n
+
+					__global int* m1_indexes, int m1_indexes_size, \n
+					__global int* m2_indexes, int m2_indexes_size, \n\n
+
+					__global int* vrt_offsets, int vrt_offsets_size, \n
+					__global float* intersect, long intersect_size, \n
+					__global unsigned int* int_faces, long int_faces_size \n
+				) { \n
+					int m1_face_id = get_global_id(0); \n
+					if (m1_face_id >= m1_indexes_size / 3) return; \n\n
+
+					size_t offset_1 = m1_face_id * 3; \n
+					float3 a_1 = get_vertex(m1_indexes[offset_1 + 0], m1_vertexes, 3); \n
+					float3 b_1 = get_vertex(m1_indexes[offset_1 + 1], m1_vertexes, 3); \n
+					float3 c_1 = get_vertex(m1_indexes[offset_1 + 2], m1_vertexes, 3); \n\n
+
+					int intersect_offset = 0; \n
+					if (m1_face_id != 0) { \n
+						intersect_offset = vrt_offsets[m1_face_id - 1]; \n
+					} \n\n
+
+					for (int m2_face_id = 0; m2_face_id < m2_indexes_size / 3; ++m2_face_id) { \n
+						size_t offset_2 = m2_face_id * 3; \n
+						float3 a_2 = get_vertex(m2_indexes[offset_2 + 0], m2_vertexes, 3); \n
+						float3 b_2 = get_vertex(m2_indexes[offset_2 + 1], m2_vertexes, 3); \n
+						float3 c_2 = get_vertex(m2_indexes[offset_2 + 2], m2_vertexes, 3); \n\n
+
+						intersect_face_and_line(a_1, b_1, c_1, a_2, b_2, vrt_offsets, vrt_offsets_size, intersect, intersect_size, int_faces, int_faces_size, m1_face_id, m2_face_id, &intersect_offset); \n
+						intersect_face_and_line(a_1, b_1, c_1, b_2, c_2, vrt_offsets, vrt_offsets_size, intersect, intersect_size, int_faces, int_faces_size, m1_face_id, m2_face_id, &intersect_offset); \n
+						intersect_face_and_line(a_1, b_1, c_1, c_2, a_2, vrt_offsets, vrt_offsets_size, intersect, intersect_size, int_faces, int_faces_size, m1_face_id, m2_face_id, &intersect_offset); \n
+
+						intersect_face_and_line(a_2, b_2, c_2, a_1, b_1, vrt_offsets, vrt_offsets_size, intersect, intersect_size, int_faces, int_faces_size, m1_face_id, m2_face_id, &intersect_offset); \n
+						intersect_face_and_line(a_2, b_2, c_2, b_1, c_1, vrt_offsets, vrt_offsets_size, intersect, intersect_size, int_faces, int_faces_size, m1_face_id, m2_face_id, &intersect_offset); \n
+						intersect_face_and_line(a_2, b_2, c_2, c_1, a_1, vrt_offsets, vrt_offsets_size, intersect, intersect_size, int_faces, int_faces_size, m1_face_id, m2_face_id, &intersect_offset); \n
+					}\n
+				}; \n
+			);
+
+		const std::string check_is_point_in_mesh_name = "check_is_point_in_mesh";
+		const std::string check_is_point_in_mesh_code =
+			enable_atomics_def +
+			check_is_point_in_face_func +
+			ray_cast_func +
+			get_vertex +
+			NAME_OF(
+				__kernel void check_is_point_in_mesh( \n
+					__global float* m_vertexes, unsigned int m_vertexes_size, \n
+					__global unsigned int* m_indexes, unsigned int m_indexes_size, \n
+					float x_dir, float y_dir, float z_dir, \n
+					float x_pt, float y_pt, float z_pt, \n
+					__global int* intersections \n
+				) { \n
+					int face_id = get_global_id(0); \n
+					if(face_id >= m_indexes_size / 3) return; \n
+
+					size_t offset = face_id * 3; \n
+					float3 s0 = get_vertex(m_indexes[offset + 0], m_vertexes, 3); \n
+					float3 s1 = get_vertex(m_indexes[offset + 1], m_vertexes, 3); \n
+					float3 s2 = get_vertex(m_indexes[offset + 2], m_vertexes, 3); \n\n
+
+					float3 dir = (float3) ( x_dir, y_dir, z_dir ); \n
+					float3 p = (float3)( x_pt, y_pt, z_pt ); \n\n
+
+					float3 intersect; \n
+					if (ray_intersects_triangle(p, dir, s0, s1, s2, &intersect)) { \n
+						if (check_is_point_in_face(s0, s1, s2, intersect)) { \n
+							atomic_add(intersections, 1); \n
+						} \n
+					} \n
+				} \n
+			);
 }
 
 #endif

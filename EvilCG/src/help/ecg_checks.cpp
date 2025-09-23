@@ -14,7 +14,10 @@ namespace ecg {
 			op_res = ecg_status_code::UNKNOWN_EXCEPTION;
 		if (status != nullptr)
 			*status = op_res.get_status();
-		if (g_ecg_logger)
+		
+		if (g_ecg_logger) {
+			std::scoped_lock lock{ g_ecg_logger_mutex };
 			g_ecg_logger->error("Unknown error: {}", op_res.get_status());
+		}
 	}
 }

@@ -2,5 +2,21 @@
 
 namespace ecg {
 	std::shared_ptr<spdlog::logger> g_ecg_logger = nullptr;
-	std::mutex g_ecg_set_logger_mutex;
+	const std::string g_unknown_error = "Unknown error";
+	std::mutex g_ecg_logger_mutex;
+
+	void info(const std::string& msg) {
+		std::scoped_lock lock{ g_ecg_logger_mutex };
+		g_ecg_logger->info(msg);
+	}
+
+	void error(const std::string& msg) {
+		std::scoped_lock lock{ g_ecg_logger_mutex };
+		g_ecg_logger->error(msg);
+	}
+
+	void warning(const std::string& msg) {
+		std::scoped_lock lock{ g_ecg_logger_mutex};
+		g_ecg_logger->warn(msg);
+	}
 }

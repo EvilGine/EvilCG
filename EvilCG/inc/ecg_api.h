@@ -15,7 +15,10 @@
 	#include <spdlog/spdlog.h>
 #endif
 
-namespace ecg {	
+#ifdef __cplusplus
+namespace ecg	
+#endif
+{
 	/// <summary>
 	/// Compare results between two meshes.
 	/// </summary>
@@ -53,10 +56,23 @@ namespace ecg {
 
 #if defined(ECG_USE_SPDLOG)
 	/// <summary>
-	/// Init logger for more informations
+	/// Init logger for more information
 	/// </summary>
-	ECG_API void init_logger(std::shared_ptr<spdlog::logger> ptr);
+	ECG_API void set_logger(std::shared_ptr<spdlog::logger> ptr);
 #endif
+
+	/// <summary>
+	/// Cleanup memory by handler.
+	/// </summary>
+	/// <param name="handler"></param>
+	/// <returns></returns>
+	ECG_API void cleanup(uint64_t handler);
+
+	/// <summary>
+	/// Cleanup all memory that was allocated in library.
+	/// </summary>
+	/// <returns></returns>
+	ECG_API void cleanup_all();
 
 	/// <summary>
 	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
@@ -229,7 +245,7 @@ namespace ecg {
 	/// <param name="mesh"></param>
 	/// <param name="status"></param>
 	/// <returns></returns>
-	ECG_API ecg_internal_mesh simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status = nullptr);
+	//ECG_API ecg_internal_mesh simplify_mesh(const ecg_mesh_t* mesh, simplify_method method, ecg_status* status = nullptr);
 
 	/// <summary>
 	/// Save ecg mesh to file.
@@ -238,6 +254,23 @@ namespace ecg {
 	/// <param name="status"></param>
 	/// <returns></returns>
 	ECG_API void save_ecg_mesh(const ecg_mesh_t* mesh, const char* filename, ecg_file_type fl_type, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// Get intersection of two meshes.
+	/// </summary>
+	/// <param name="m1"></param>
+	/// <param name="m2"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
+	ECG_API ecg_internal_mesh_t compute_intersection(const ecg_mesh_t* m1, const ecg_mesh_t* m2, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// Function for creating a convex hull from a set of 3D vertexes.
+	/// </summary>
+	/// <param name="vertexes"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
+	ECG_API ecg_internal_mesh_t create_convex_hull(const ecg_array_t vrt_arr, ecg_status* status = nullptr);
 
 	// [-] Not implemented
 	//ECG_API ecg_internal_mesh smooth_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
