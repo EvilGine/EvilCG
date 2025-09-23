@@ -49,6 +49,7 @@ set(SOURCE_FILES
 	./src/impl/ecg_api_simplification.cpp
 	./src/impl/ecg_api_intersections.cpp
 	./src/impl/ecg_api_export.cpp
+	./src/impl/ecg_api_hulls.cpp
 
 	./src/ecg_api.cpp
 )

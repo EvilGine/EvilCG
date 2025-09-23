@@ -8,12 +8,14 @@ namespace ecg {
 	public:
 		size_t operator()(const std::pair<uint32_t, uint32_t>& obj) const noexcept;
 		size_t operator()(const vec3_base& obj) const noexcept;
+		size_t operator()(const edge_t& obj) const noexcept;
 	};
 
 	class ecg_compare_func {
 	public:
 		bool operator()(const std::pair<uint32_t, uint32_t>& a, const std::pair<uint32_t, uint32_t>& b) const noexcept;
 		bool operator()(const vec3_base& a, const vec3_base& b) const noexcept;
+		bool operator()(const edge_t& a, const edge_t& b) const noexcept;
 	};
 
 	class ecg_less_func {

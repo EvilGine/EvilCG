@@ -105,4 +105,8 @@ namespace ecg {
 	std::pair<uint32_t, uint32_t> make_edge(uint32_t a, uint32_t b) {
 		return std::pair{ std::min(a,b), std::max(a,b) };
 	};
+
+	edge_t make_edge_struct(uint32_t a, uint32_t b) {
+		return edge_t { std::min(a,b), std::max(a,b) };
+	}
 }

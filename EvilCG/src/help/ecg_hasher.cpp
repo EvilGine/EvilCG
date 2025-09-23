@@ -27,12 +27,26 @@ namespace ecg {
 		return seed;
 	}
 
+	size_t ecg_hash_func::operator()(const edge_t& obj) const noexcept {
+		std::size_t seed = 0;
+		std::hash<uint32_t> hi;
+
+		boost::hash_combine(seed, hi(std::min(obj.a, obj.b)));
+		boost::hash_combine(seed, hi(std::max(obj.a, obj.b)));
+
+		return seed;
+	}
+
 	bool ecg_compare_func::operator()(const std::pair<uint32_t, uint32_t>& a, const std::pair<uint32_t, uint32_t>& b) const noexcept {
 		return (a.first == b.first && a.second == b.second) || (a.first == b.second && a.second == b.first);
 	}
 
 	bool ecg_compare_func::operator()(const vec3_base& a, const vec3_base& b) const noexcept {
 		return compare_vec3_base(a, b, default_eps);
+	}
+
+	bool ecg_compare_func::operator()(const edge_t& a, const edge_t& b) const noexcept {
+		return (a.a == b.a && a.b == b.b) || (a.a == b.b && a.b == b.a);
 	}
 
 	bool ecg_less_func::operator()(const vec3_base& a, const vec3_base& b) const noexcept {

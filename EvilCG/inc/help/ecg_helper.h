@@ -55,6 +55,14 @@ namespace ecg {
 	/// <param name="b"></param>
 	/// <returns></returns>
 	std::pair<uint32_t, uint32_t> make_edge(uint32_t a, uint32_t b);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="a"></param>
+	/// <param name="b"></param>
+	/// <returns></returns>
+	edge_t make_edge_struct(uint32_t a, uint32_t b);
 }
 
 #endif
