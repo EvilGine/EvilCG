@@ -3,20 +3,26 @@
 #include <ecg_api_define.h>
 #include <ecg_global.h>
 
+#ifdef __cplusplus
 namespace ecg {
+#endif
 	constexpr float g_epsilon = 1e-6f;
 
 	ECG_API struct ecg_handle_t {
 		uint64_t handler;
 
+#ifdef __cplusplus
 		ecg_handle_t() : handler(0) {}
+#endif
 	};
 
 	ECG_API struct ecg_array_t : public ecg_handle_t {
 		size_t arr_size;
 		void* arr_ptr;
 
+#ifdef __cplusplus
 		ecg_array_t() : arr_size(0), arr_ptr(nullptr) {}
+#endif
 	};
 
 	ECG_API struct intersection_set_t {
@@ -29,9 +35,11 @@ namespace ecg {
 		float y;
 		float z;
 
+#ifdef __cplusplus
 		vec3_base() : x(0.0f), y(0.0f), z(0.0f) {}
 		vec3_base(float base) : x(base), y(base), z(base) {}
 		vec3_base(float x, float y, float z) : x(x), y(y), z(z) {}
+#endif
 	};
 
 	ECG_API struct vec4_base {
@@ -40,10 +48,12 @@ namespace ecg {
 		float z;
 		float w;
 
+#ifdef __cplusplus
 		vec4_base() : x(0.0f), y(0.0f), z(0.0f), w(0.0f) {}
 		vec4_base(float base) : x(base), y(base), z(base), w(base) {}
 		vec4_base(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
 		vec4_base(const vec3_base& v3, float w) : x(v3.x), y(v3.y), z(v3.z), w(w) {}
+#endif
 	};
 
 	ECG_API struct mat3_base {
@@ -130,10 +140,12 @@ namespace ecg {
 		uint32_t* indexes;
 		uint32_t indexes_size;
 
+#ifdef __cplusplus
 		ecg_mesh_t() : 
 			vertexes(nullptr), vertexes_size(0),
 			indexes(nullptr), indexes_size(0)
 		{}
+#endif
 	};
 
 	ECG_API struct face_t {
@@ -180,6 +192,8 @@ namespace ecg {
 		0.0f, 1.0f, 0.0f,
 		0.0f, 0.0f, 1.0f
 	};
+#ifdef __cplusplus
 }
+#endif
 
 #endif

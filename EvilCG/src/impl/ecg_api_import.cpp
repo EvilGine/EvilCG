@@ -2,12 +2,14 @@
 #define ECG_API_IMPORT_H
 #include <help/ecg_allocate.h>
 #include <help/ecg_logger.h>
+#include <help/ecg_checks.h>
+#include <help/ecg_mem.h>
 #include <ecg_api.h>
 
 namespace ecg {
 	ecg_file_type get_type_by_ext(const std::string& ext) {
 		if (ext == ".obj") return ecg_file_type::ECG_OBJ_FILE;
-		if (ext == ".ecgm") return ecg_file_type::ECG_RAW_FILE;
+		//if (ext == ".ecgm") return ecg_file_type::ECG_RAW_FILE;
 		return ecg_file_type::ECG_UNKNOWN_TYPE;
 	}
 
@@ -37,6 +39,7 @@ namespace ecg {
 
 			std::vector<ecg::vec3_base> obj_vertexes;
 			std::vector<uint32_t> obj_indexes;
+			std::string line = "";
 
 			while (std::getline(file, line)) {
 				if (line[0] == 'v' && line[1] == ' ') {
@@ -52,12 +55,12 @@ namespace ecg {
 			if (!obj_vertexes.empty()) {
 				mesh.vertexes = allocate_array<vec3_base>(obj_vertexes.size());
 				if(mesh.vertexes.arr_ptr != nullptr)
-					std::memcpy(mesh.vertexes.arr_ptr, obj_vertexes.size(), obj_vertexes.size() * sizeof(vec3_base));
+					std::memcpy(mesh.vertexes.arr_ptr, obj_vertexes.data(), obj_vertexes.size() * sizeof(vec3_base));
 			}
 			if (!obj_indexes.empty()) {
 				mesh.indexes = allocate_array<uint32_t>(obj_indexes.size());
 				if(mesh.indexes.arr_ptr != nullptr)
-					std::memcpy(mesh.indexes.arr_ptr, obj_indexes.size(), obj_indexes.size() * sizeof(uint32_t));
+					std::memcpy(mesh.indexes.arr_ptr, obj_indexes.data(), obj_indexes.size() * sizeof(uint32_t));
 			}
 
 			return mesh;
@@ -67,20 +70,26 @@ namespace ecg {
 	namespace native {
 		ecg_internal_mesh_t import_ecg_native_file(std::ifstream& file) {
 			// TODO: Implement later, than stab ecg_mesh_t
+			return ecg_internal_mesh_t{};
 		}
 	}
 
-	ecg_internal_mesh_t load_ecg_mesh(const char* filename) {
+	ecg_internal_mesh_t load_mesh(const char* filename, ecg_status* status) {
+		auto& mem_inst = ecg_mem::get_instance();
 		ecg_internal_mesh_t result;
+		ecg_status_handler op_res;
 
 		try {
-			if (filename == nullptr) return;
+			if (filename == nullptr) {
+				if (status != nullptr) *status = ecg_status_code::INVALID_ARG;
+				return ecg_internal_mesh_t{};
+			}
 			std::filesystem::path path_to_file = filename;
 			
 			std::ifstream file;
 			file.open(path_to_file);
 			if (file.is_open()) {
-				ecg_file_type type = get_type_by_ext(path_to_file.extension());
+				ecg_file_type type = get_type_by_ext(path_to_file.extension().string());
 				switch (type)
 				{
 				case ecg::ECG_OBJ_FILE:

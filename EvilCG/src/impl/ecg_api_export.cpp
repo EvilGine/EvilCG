@@ -13,6 +13,18 @@
 #include <help/ecg_geom.h>
 
 namespace ecg {
+	std::string get_extension_from_type(ecg_file_type type) {
+		switch (type)
+		{
+		case ecg::ECG_OBJ_FILE:
+			return ".obj";
+		default:
+			break;
+		}
+
+		return "";
+	}
+
 	void save_ecg_as_obj(std::ofstream& file, const ecg_mesh_t* mesh) {
 		if (mesh->vertexes != nullptr) {
 			for (size_t id = 0; id < mesh->vertexes_size; ++id) {
@@ -36,8 +48,10 @@ namespace ecg {
 			if (mesh == nullptr) op_res = ecg_status_code::INVALID_ARG;
 			if (filename == nullptr) op_res = ecg_status_code::INVALID_ARG;
 
+			auto ext = get_extension_from_type(fl_type);
 			std::string fl = filename;
 			std::ofstream file;
+			fl += ext;
 
 			file.open(fl);
 			if (!file.is_open()) op_res = ecg_status_code::RUNTIME_ERROR;

@@ -48,6 +48,8 @@ set(SOURCE_FILES
 
 	./src/impl/ecg_api_simplification.cpp
 	./src/impl/ecg_api_intersections.cpp
+	./src/impl/ecg_api_convert.cpp
+	./src/impl/ecg_api_import.cpp
 	./src/impl/ecg_api_export.cpp
 	./src/impl/ecg_api_hulls.cpp
 
@@ -58,9 +60,43 @@ set(SOURCE_FILES
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE ECG_DLL)
 
+target_link_libraries(${PROJECT_NAME} PUBLIC  Boost::boost)
+target_link_libraries(${PROJECT_NAME} PUBLIC  Eigen3::Eigen)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
-target_link_libraries(${PROJECT_NAME} PRIVATE Boost::boost)
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenCL::OpenCL)    
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
 target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
+
+set(ECG_PUBLIC_HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/help/ecg_status.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/help/ecg_geom.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/ecg_api_define.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/ecg_global.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc/ecg_api.h
+)
+
+# Base path to library
+set(ECG_INC_DST $<TARGET_FILE_DIR:${PROJECT_NAME}>/inc)
+
+# Make folders
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${ECG_INC_DST}/help
+)
+
+# Copy headers
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/help/ecg_status.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/help/ecg_geom.h
+        ${ECG_INC_DST}/help
+)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/ecg_api_define.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/ecg_global.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/ecg_api.h
+        ${ECG_INC_DST}
+)
