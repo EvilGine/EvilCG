@@ -1,6 +1,6 @@
 #include <ecg_api.h>
 
-#include <core/ecg_subprograms.h>
+#include <core/ecg_cl_programs.h>
 #include <core/ecg_host_ctrl.h>
 #include <core/ecg_internal.h>
 #include <core/ecg_program.h>
@@ -421,7 +421,7 @@ namespace ecg {
 
 		auto int_set_v1 = get_intersection_points(m1, m2, status);
 		auto vrt = add_interior_intersection_points(m1, m2, &int_set_v1, status);
-		auto convex = create_convex_hull(vrt, status);
+		auto convex = hulls::create_convex_hull(vrt, status);
 
 		return convex;
 	}

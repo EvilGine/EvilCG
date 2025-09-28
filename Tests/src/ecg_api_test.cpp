@@ -147,14 +147,14 @@ TEST(ecg_api, compute_aabb) {
 	custom_timer_t timer;
 
 	timer.start();
-	result_bb = ecg::compute_aabb(nullptr, &status);
+	result_bb = ecg::hulls::compute_aabb(nullptr, &status);
 	compare_result = ecg::compare_bounding_boxes(result_bb, ecg::default_bb);
 	ASSERT_EQ(status, ecg::ecg_status_code::INVALID_ARG);
 	ASSERT_TRUE(compare_result);
 	timer.end();
 
 	timer.start();
-	result_bb = ecg::compute_aabb(&mesh, &status);
+	result_bb = ecg::hulls::compute_aabb(&mesh, &status);
 	compare_result = ecg::compare_bounding_boxes(result_bb, ecg::default_bb);
 	ASSERT_EQ(status, ecg::ecg_status_code::EMPTY_VERTEX_ARR);
 	ASSERT_TRUE(compare_result);
@@ -164,7 +164,7 @@ TEST(ecg_api, compute_aabb) {
 	for (size_t mesh_id = 0; mesh_id < mesh_inst.loaded_meshes.size(); ++mesh_id) {
 		timer.start();
 		auto item = mesh_inst.loaded_meshes[mesh_id];
-		result_bb = ecg::compute_aabb(&item->mesh, &status);
+		result_bb = ecg::hulls::compute_aabb(&item->mesh, &status);
 		compare_result = ecg::compare_bounding_boxes(result_bb, ecg::default_bb);
 		ASSERT_EQ(status, ecg::ecg_status_code::SUCCESS);
 		timer.end();
@@ -182,14 +182,14 @@ TEST(ecg_api, compute_obb) {
 	custom_timer_t timer;
 
 	timer.start();
-	result_bb = ecg::compute_obb(nullptr, &status);
+	result_bb = ecg::hulls::compute_obb(nullptr, &status);
 	compare_result = ecg::compare_full_bb(result_bb, ecg::full_bounding_box());
 	ASSERT_EQ(status, ecg::ecg_status_code::INVALID_ARG);
 	ASSERT_TRUE(compare_result);
 	timer.end();
 
 	timer.start();
-	result_bb = ecg::compute_obb(&mesh, &status);
+	result_bb = ecg::hulls::compute_obb(&mesh, &status);
 	compare_result = ecg::compare_full_bb(result_bb, ecg::full_bounding_box());
 	ASSERT_EQ(status, ecg::ecg_status_code::EMPTY_VERTEX_ARR);
 	ASSERT_TRUE(compare_result);
@@ -199,7 +199,7 @@ TEST(ecg_api, compute_obb) {
 	for (size_t mesh_id = 0; mesh_id < mesh_inst.loaded_meshes.size(); ++mesh_id) {
 		timer.start();
 		auto item = mesh_inst.loaded_meshes[mesh_id];
-		result_bb = ecg::compute_obb(&item->mesh, &status);
+		result_bb = ecg::hulls::compute_obb(&item->mesh, &status);
 		compare_result = ecg::compare_full_bb(result_bb, ecg::full_bounding_box());
 		ASSERT_EQ(status, ecg::ecg_status_code::SUCCESS);
 		timer.end();
@@ -793,7 +793,7 @@ namespace ecg_simplifiation {
 		vertexes.arr_size = convex_hull_1.vertexes_size;
 
 		timer.start();
-		auto convex_hull = ecg::create_convex_hull(vertexes, &status);
+		auto convex_hull = ecg::hulls::create_convex_hull(vertexes, &status);
 		timer.end();
 
 		ecg::ecg_mesh_t mesh;
@@ -802,7 +802,7 @@ namespace ecg_simplifiation {
 		mesh.vertexes_size = convex_hull.vertexes.arr_size;
 		mesh.indexes_size = convex_hull.indexes.arr_size;
 
-		ecg::save_ecg_mesh(&mesh, "res_convex_hull_1.obj", ecg::ecg_file_type::ECG_OBJ_FILE, &status);
+		ecg::save_mesh(&mesh, "res_convex_hull_1.obj", ecg::ecg_file_type::ECG_OBJ_FILE, &status);
 	}
 
 	//TEST(ecg_api, qem_simplification) {

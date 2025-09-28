@@ -1,6 +1,6 @@
 #include <ecg_api.h>
 
-#include <core/ecg_subprograms.h>
+#include <core/ecg_cl_programs.h>
 #include <core/ecg_host_ctrl.h>
 #include <core/ecg_internal.h>
 #include <core/ecg_program.h>
@@ -12,7 +12,7 @@
 #include <help/ecg_math.h>
 #include <help/ecg_geom.h>
 
-namespace ecg {
+namespace ecg::hulls {
 	const float g_convex_epsilon = 1E-06F;
 
 	struct convex_face_t {
@@ -152,7 +152,7 @@ namespace ecg {
 			op_res = queue.enqueueReadBuffer(res_bb_buffer, CL_FALSE, 0, sizeof(bounding_box), &bb);
 			op_res = queue.finish();
 
-			result_obb = bb_to_full_bb(&bb);
+			result_obb = hulls::bb_to_full_bb(&bb);
 			result_obb.p0 = center + transf * result_obb.p0;
 			result_obb.p1 = center + transf * result_obb.p1;
 			result_obb.p2 = center + transf * result_obb.p2;

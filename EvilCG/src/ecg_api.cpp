@@ -1,6 +1,6 @@
 #include <ecg_api.h>
 
-#include <core/ecg_subprograms.h>
+#include <core/ecg_cl_programs.h>
 #include <core/ecg_host_ctrl.h>
 #include <core/ecg_internal.h>
 #include <core/ecg_program.h>

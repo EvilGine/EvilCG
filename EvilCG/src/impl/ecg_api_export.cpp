@@ -1,6 +1,6 @@
 #include <ecg_api.h>
 
-#include <core/ecg_subprograms.h>
+#include <core/ecg_cl_programs.h>
 #include <core/ecg_host_ctrl.h>
 #include <core/ecg_internal.h>
 #include <core/ecg_program.h>
@@ -29,7 +29,7 @@ namespace ecg {
 		}
 	}
 
-	void save_ecg_mesh(const ecg_mesh_t* mesh, const char* filename, ecg_file_type fl_type, ecg_status* status) {
+	void save_mesh(const ecg_mesh_t* mesh, const char* filename, ecg_file_type fl_type, ecg_status* status) {
 		ecg_status_handler op_res;
 
 		try {
@@ -46,8 +46,8 @@ namespace ecg {
 			case ecg::ECG_OBJ_FILE:
 				save_ecg_as_obj(file, mesh);
 				break;
-			case ecg::ECG_RAW_FILE:
-				break;
+			//case ecg::ECG_RAW_FILE:
+			//	break;
 			default:
 				op_res = ecg_status_code::INVALID_ARG;
 				break;
