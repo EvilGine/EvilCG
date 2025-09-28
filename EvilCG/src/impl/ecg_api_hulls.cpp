@@ -1,6 +1,6 @@
 #include <ecg_api.h>
 
-#include <core/ecg_subprograms.h>
+#include <core/ecg_cl_programs.h>
 #include <core/ecg_host_ctrl.h>
 #include <core/ecg_internal.h>
 #include <core/ecg_program.h>
@@ -12,7 +12,7 @@
 #include <help/ecg_math.h>
 #include <help/ecg_geom.h>
 
-namespace ecg {
+namespace ecg::hulls {
 	const float g_convex_epsilon = 1E-06F;
 
 	struct convex_face_t {
@@ -28,7 +28,7 @@ namespace ecg {
 	void internal_compute_aabb(
 		cl::Context& context, cl::CommandQueue& queue,
 		cl::Buffer& aabb_result, cl::Buffer& vertexes_buffer,
-		cl_int vert_size, std::shared_ptr<ecg_program>& program, ecg_status_handler& op_res,
+		cl_int vert_size, std::shared_ptr<ecg_program_wrapper>& program, ecg_status_handler& op_res,
 		cl::NDRange global, cl::NDRange local,
 		bounding_box& result_bb
 	) {
@@ -57,7 +57,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_aabb_code };
-			auto program = ecg_program::get_program(context, dev, sources, compute_aabb_name);
+			auto program = ecg_program_wrapper::get_program(context, dev, sources, compute_aabb_name);
 
 			const size_t buffer_size = sizeof(mesh->vertexes[0]) * mesh->vertexes_size;
 			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, buffer_size);
@@ -109,7 +109,7 @@ namespace ecg {
 				compute_obb_code
 			};
 
-			auto compute_obb = ecg_program::get_program(context, dev, obb_sources, compute_obb_name);
+			auto compute_obb = ecg_program_wrapper::get_program(context, dev, obb_sources, compute_obb_name);
 			cl::NDRange global = mesh->vertexes_size;
 			cl::NDRange local = cl::NullRange;
 
@@ -152,7 +152,7 @@ namespace ecg {
 			op_res = queue.enqueueReadBuffer(res_bb_buffer, CL_FALSE, 0, sizeof(bounding_box), &bb);
 			op_res = queue.finish();
 
-			result_obb = bb_to_full_bb(&bb);
+			result_obb = hulls::bb_to_full_bb(&bb);
 			result_obb.p0 = center + transf * result_obb.p0;
 			result_obb.p1 = center + transf * result_obb.p1;
 			result_obb.p2 = center + transf * result_obb.p2;

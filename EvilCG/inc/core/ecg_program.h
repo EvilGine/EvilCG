@@ -21,41 +21,43 @@ namespace ecg {
 	/// <summary>
 	/// Program wrapper for easy work with OpenCL program.
 	/// </summary>
-	class ECG_API ecg_program {
+	class ECG_API ecg_program_wrapper {
 	public:
-		virtual ~ecg_program() = default;
-		ecg_program(const ecg_program& prog) = delete;
+		virtual ~ecg_program_wrapper() = default;
+		ecg_program_wrapper(const ecg_program_wrapper& prog) = delete;
+		ecg_program_wrapper(cl::Context& cont, cl::Device& dev, cl::Program::Sources& srcs);
 
-		ecg_program(cl::Context& cont, cl::Device& dev, cl::Program::Sources& srcs);
-		static std::shared_ptr<ecg_program> get_program(cl::Context& cont, cl::Device& dev, cl::Program::Sources& srcs, std::string prog_name);
+		static std::shared_ptr<ecg_program_wrapper> get_program(
+			cl::Context& context, cl::Device& device,
+			cl::Program::Sources& sources, std::string name
+		);
 
 		const bool is_program_was_built() const;
 		cl::Program get_program() const;
 
-		template <typename ... Args>
-		cl_int execute(
-			cl::CommandQueue& queue, std::string kernel_name,
-			cl::NDRange& global, cl::NDRange& local,
-			const Args& ... args) {
-			cl_int op_res = CL_SUCCESS;
-			cl_int arg_index = 0;
+		template <typename... Args>
+		cl_int execute(cl::CommandQueue& queue, const std::string& kernel_name,
+			cl::NDRange& global_range, cl::NDRange& local_range,
+			const Args&... args
+		) {
+			if (!m_is_built) return CL_BUILD_PROGRAM_FAILURE;
 
-			auto set_arg_with_log = [&](cl::Kernel& kernel, auto& arg) {
+			cl_int result = CL_SUCCESS;
+			cl::Kernel kernel(m_program, kernel_name.c_str(), &result);
+
+			int arg_index = 0;
+			auto set_arg_with_check = [&](auto& arg) {
 				using ArgType = std::decay_t<decltype(arg)>;
 				static_assert(is_opencl_type<ArgType>,
-					"Argument type is not supported. Only OpenCL types are allowed (e.g., cl_int, cl_uint, cl_float) except nullptr."
-				);
+					"Unsupported argument type: must be an OpenCL type or nullptr");
 				return kernel.setArg(arg_index++, arg);
 			};
 
-			if (!m_is_built)
-				return CL_BUILD_PROGRAM_FAILURE;
+			(set_arg_with_check(args), ...);
 
-			cl::Kernel kernel(m_program, kernel_name.c_str(), &op_res);
-			(set_arg_with_log(kernel, args), ...);
-			op_res = queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
+			result = queue.enqueueNDRangeKernel(kernel, cl::NullRange, global_range, local_range);
 			queue.finish();
-			return op_res;
+			return result;
 		}
 
 	private:

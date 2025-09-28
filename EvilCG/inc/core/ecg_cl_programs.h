@@ -3,14 +3,14 @@
 #include <ecg_global.h>
 
 namespace ecg {
-	#define NAME_OF(VAR) "\n"#VAR
+	#define SCRIPT(VAR) "\n"#VAR
 
 	/// <summary>
 	/// Namespace with structures for OpenCL kernel codes
 	/// </summary>
 	namespace cl_structs {
 		const std::string face_struct =
-			NAME_OF(
+			SCRIPT(
 				struct face_t {
 					\n
 						uint32_t id0; \n
@@ -20,7 +20,7 @@ namespace ecg {
 			);
 
 		const std::string edge_struct =
-			NAME_OF(
+			SCRIPT(
 				struct edge_t { \n
 					uint32_t id0; \n
 					uint32_t id1; \n
@@ -28,7 +28,7 @@ namespace ecg {
 			);
 
 		const std::string init_edge_func =
-			NAME_OF(
+			SCRIPT(
 				void init_edge(struct edge_t* edge) { \n
 					edge->id0 = 0; \n
 					edge->id1 = 0; \n
@@ -36,7 +36,7 @@ namespace ecg {
 			);
 
 		const std::string init_face_func =
-			NAME_OF(
+			SCRIPT(
 				void init_face(struct face_t* face) { \n
 					face->id0 = 0; \n
 					face->id1 = 0; \n
@@ -45,7 +45,7 @@ namespace ecg {
 			);
 
 		const std::string get_face_func =
-			NAME_OF(
+			SCRIPT(
 				struct face_t get_face(__global uint32_t * indexes, uint32_t id) {
 					struct face_t result;
 					result.id0 = indexes[id * 3 + 0];
@@ -56,7 +56,7 @@ namespace ecg {
 			);
 
 		const std::string faces_has_shared_edge_func =
-			NAME_OF(
+			SCRIPT(
 				bool faces_has_shared_edge(struct face_t f1, struct face_t f2) {
 					return 
 						(f1.id0 == temp_face.id0 && f2.id1 == temp_face.id1) ||
@@ -72,14 +72,14 @@ namespace ecg {
 			);
 
 		const std::string is_face_null_func =
-			NAME_OF(
+			SCRIPT(
 				bool is_face_null(struct face_t face) { \n
 					return face.id0 == 0 && face.id1 == 0 && face.id2 == 0; \n
 				} \n\n
 			);
 
 		const std::string is_face_contains_vertex_func =
-			NAME_OF(
+			SCRIPT(
 				bool is_face_contains_vertex(struct face_t face, uint32_t vert) { \n
 					bool res = \n
 						face.id0 == vert || \n
@@ -90,7 +90,7 @@ namespace ecg {
 			);
 
 		const std::string is_face_contains_edge_func =
-			NAME_OF(
+			SCRIPT(
 				bool is_face_contains_edge(struct face_t face, struct edge_t edge) { \n
 					bool contains_edge = \n
 						(edge.id0 == face.id0 && edge.id1 == face.id1) || \n
@@ -104,7 +104,7 @@ namespace ecg {
 			);
 
 		const std::string is_edges_equal_func =
-			NAME_OF(
+			SCRIPT(
 				bool is_edges_equal(struct edge_t lhs, struct edge_t rhs) {
 					return 
 						(lhs.id0 == rhs.id0 && lhs.id1 == rhs.id1) ||
@@ -118,7 +118,7 @@ namespace ecg {
 	const std::string enable_atomics_def = "\n#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable\n";
 
 	const std::string mul_mat_vec =
-		NAME_OF(
+		SCRIPT(
 			inline float3 mul_mat3_vec3(volatile __global float* mat3, float3 vec) {
 				float3 result;
 
@@ -141,7 +141,7 @@ namespace ecg {
 		);
 
 	const std::string atomic_min_f =
-		NAME_OF(
+		SCRIPT(
 			inline void atomic_min_f(volatile __global float* source, const float new_value) {
 				union {
 					unsigned int int_value;
@@ -184,50 +184,50 @@ namespace ecg {
 		);
 
 	const std::string atomic_max_f = 
-    NAME_OF(
-        inline void atomic_max_f(volatile __global float* source, const float new_value) {\n
-			union {
-				unsigned int int_value;
-				float float_value;
-			} old_union;
+		SCRIPT(
+			inline void atomic_max_f(volatile __global float* source, const float new_value) {\n
+				union {
+					unsigned int int_value;
+					float float_value;
+				} old_union;
 
-			union {
-				unsigned int int_value;
-				float float_value;
-			} new_union;
+				union {
+					unsigned int int_value;
+					float float_value;
+				} new_union;
 
-            do {\n
-                old_union.float_value = *source;\n
-                if (new_value <= old_union.float_value)\n
-                    return;\n\n
+				do {\n
+					old_union.float_value = *source;\n
+					if (new_value <= old_union.float_value)\n
+						return;\n\n
 
-                new_union.float_value = new_value;\n
-            } while (atomic_cmpxchg((__global unsigned int*) source, old_union.int_value, new_union.int_value) != old_union.int_value);\n
-        }\n\n
+					new_union.float_value = new_value;\n
+				} while (atomic_cmpxchg((__global unsigned int*) source, old_union.int_value, new_union.int_value) != old_union.int_value);\n
+			}\n\n
 
-        inline void atomic_max_fl(volatile __local float* source, const float new_value) {\n
-            union {
-				unsigned int int_value;
-				float float_value;
-			} old_union;
+			inline void atomic_max_fl(volatile __local float* source, const float new_value) {\n
+				union {
+					unsigned int int_value;
+					float float_value;
+				} old_union;
 
-			union {
-				unsigned int int_value;
-				float float_value;
-			} new_union;
+				union {
+					unsigned int int_value;
+					float float_value;
+				} new_union;
 
-            do {\n
-                old_union.float_value = *source;\n
-                if (new_value <= old_union.float_value)\n
-                    return;\n\n
+				do {\n
+					old_union.float_value = *source;\n
+					if (new_value <= old_union.float_value)\n
+						return;\n\n
 
-                new_union.float_value = new_value;\n
-            } while (atomic_cmpxchg((__local unsigned int*) source, old_union.int_value, new_union.int_value) != old_union.int_value);\n
-        }\n
-    );
+					new_union.float_value = new_value;\n
+				} while (atomic_cmpxchg((__local unsigned int*) source, old_union.int_value, new_union.int_value) != old_union.int_value);\n
+			}\n
+		);
 
 	const std::string atomic_add_f =
-		NAME_OF(
+		SCRIPT(
 			void __attribute__((always_inline)) atomic_add_f(volatile __global float* source, const float val) {
 				union {
 					uint  u32;
@@ -270,7 +270,7 @@ namespace ecg {
 		);
 
 	const std::string atomic_sub_f =
-		NAME_OF(
+		SCRIPT(
 			inline void atomic_sub_f(volatile __global float* source, const float sub_value) {
 				union {
 					unsigned int int_value;
@@ -283,7 +283,7 @@ namespace ecg {
 		);
 
 	const std::string get_vert_len =
-		NAME_OF(
+		SCRIPT(
 			float get_len_fl3(float3 vert) {
 				return sqrt(vert.x * vert.x + vert.y * vert.y + vert.z * vert.z);
 			}
@@ -294,7 +294,7 @@ namespace ecg {
 		);
 
 	const std::string get_vertex =
-		NAME_OF(
+		SCRIPT(
 			float3 get_vertex(int id, volatile __global float* vertexes, int vert_size) { \n
 				return (float3)( \n
 					vertexes[id * vert_size + 0], \n
@@ -305,14 +305,14 @@ namespace ecg {
 		);
 
 	const std::string get_face_normal =
-		NAME_OF(
+		SCRIPT(
 			float3 get_face_normal(float3 s0, float3 s1, float3 s2) { \n
 				return cross_product(s1 - s0, s2 - s0); \n
 			} \n\n
 		);
 
 	const std::string is_point_in_triangle_func =
-		NAME_OF(
+		SCRIPT(
 			bool is_point_in_triangle(float3 P, float3 S0, float3 S1, float3 S2) {
 				float3 v0 = S1 - S0;
 				float3 v1 = S2 - S0;
@@ -334,7 +334,7 @@ namespace ecg {
 		);
 
 	const std::string get_intersection_point_func =
-		NAME_OF(
+		SCRIPT(
 			bool get_intersection_point(
 				float3 p0, float3 p1, float3 s0, float3 s1, float3 s2,
 				float3 * intersection_point, float* t_parameter) {
@@ -382,7 +382,7 @@ namespace ecg {
 		);
 
 	const std::string is_vertex_of_triangle_func =
-		NAME_OF(
+		SCRIPT(
 			bool is_vertex_of_triangle(float3 s0, float3 s1, float3 s2, float3 pt) {
 				return
 					s0.x == pt.x && s0.y == pt.y && s0.z == pt.z ||
@@ -392,7 +392,7 @@ namespace ecg {
 		);
 
 	const std::string has_shared_vertex_func =
-		NAME_OF(
+		SCRIPT(
 			bool has_shared_vertex(const face_t & f1, const face_t & f2) {
 				return f1.id0 == f2.id0 || f1.id0 == f2.id1 || f1.id0 == f2.id2 ||
 					f1.id1 == f2.id0 || f1.id1 == f2.id1 || f1.id1 == f2.id2 ||
@@ -401,7 +401,7 @@ namespace ecg {
 		);
 
 	const std::string cross_product =
-		NAME_OF(
+		SCRIPT(
 			float3 cross_product(float3 a, float3 b) { \n
 				return (float3)( \n
 					a.y * b.z - a.z * b.y, \n
@@ -415,7 +415,7 @@ namespace ecg {
 		cross_product +
 		get_vert_len +
 		get_vertex +
-		NAME_OF(
+		SCRIPT(
 			float calculate_surf_area(
 				volatile __global float* vertexes, 
 				int ind_1, int ind_2, int ind_3,
@@ -436,7 +436,7 @@ namespace ecg {
 	const std::string to_mesh_name = "to_mesh";
 	const std::string to_mesh_code =
 		enable_atomics_def +
-		NAME_OF(
+		SCRIPT(
 			__kernel void to_mesh(
 				__global float* input_vert, int input_vert_size,
 				__global float* output_vert, int output_vert_size)
@@ -460,7 +460,7 @@ namespace ecg {
 		"#define NOT_EQUAL -1\n" + 
 		enable_atomics_def +
 		get_vertex + 
-		NAME_OF(
+		SCRIPT(
 			__kernel void force_compare_meshes(
 				int vert_size, 
 				__global float* m1_v, __global float* m2_v, 
@@ -492,7 +492,7 @@ namespace ecg {
 		"#define NOT_EQUAL -1\n" +
 		enable_atomics_def +
 		get_vertex + 
-		NAME_OF(
+		SCRIPT(
 			__kernel void compare_meshes(
 				int vert_size, float threshold,
 				__global float* m1_v, __global float* m2_v,
@@ -525,7 +525,7 @@ namespace ecg {
 		atomic_min_f +
 		atomic_max_f +
 		get_vertex +
-		NAME_OF(
+		SCRIPT(
 			__kernel void compute_aabb(
 				__global float* mesh_vertexes, int vertex_size,
 				__global float* aabb
@@ -548,7 +548,7 @@ namespace ecg {
 	const std::string summ_vertexes_name = "summ_vertexes";
 	const std::string summ_vertexes_code =
 		get_vertex +
-		NAME_OF(
+		SCRIPT(
 			__kernel void summ_vertexes(
 				int vert_arr_len, int vert_size,
 				__global float* vertexes,
@@ -597,7 +597,7 @@ namespace ecg {
 		enable_atomics_def +
 		get_vert_len +
 		get_vertex +
-		NAME_OF(
+		SCRIPT(
 			__kernel void find_farthest_vertex(
 				__global float* vertexes, int vertex_size,
 				__global float* result_obb)
@@ -623,7 +623,7 @@ namespace ecg {
 	const std::string compute_cov_mat_name = "compute_cov";
 	const std::string compute_cov_mat_code =
 		atomic_add_f +
-		NAME_OF(
+		SCRIPT(
 			void update_local_mat(__local float* mat, float3 vrt, float4 center) { \n
 				atomic_add_fl(&mat[0 * 3 + 0], (vrt.x - center.x) * (vrt.x - center.x)); \n
 				atomic_add_fl(&mat[0 * 3 + 1], (vrt.x - center.x) * (vrt.x - center.y)); \n
@@ -676,7 +676,7 @@ namespace ecg {
 		atomic_min_f +
 		atomic_max_f +
 		mul_mat_vec +
-		NAME_OF(
+		SCRIPT(
 			__kernel void compute_obb(
 				__global float* vertexes, int vertex_size, 
 				__global float* inv_mat, float4 center,
@@ -728,7 +728,7 @@ namespace ecg {
 		enable_atomics_def +
 		atomic_add_f +
 		calculate_surf_area +
-		NAME_OF(
+		SCRIPT(
 			__kernel void compute_surface_area( \n
 				__global float* vertexes, int vertexes_size, \n
 				__global int* indexes, int indexes_size, \n
@@ -765,7 +765,7 @@ namespace ecg {
 		cl_structs::edge_struct +
 		cl_structs::get_face_func +
 		cl_structs::is_face_contains_edge_func +
-		NAME_OF(
+		SCRIPT(
 			__kernel void is_mesh_closed(
 				__global uint32_t* indexes, uint32_t indexes_cnt,
 				__global bool* result
@@ -810,7 +810,7 @@ namespace ecg {
 		cl_structs::is_edges_equal_func +
 		cl_structs::is_face_contains_edge_func +
 		cl_structs::is_face_contains_vertex_func +
-		NAME_OF(
+		SCRIPT(
 			uint32_t find_next_face( \n
 				__global uint32_t * indexes, uint32_t faces_cnt, \n
 				struct edge_t edge, uint32_t prev_face_id \n
@@ -960,7 +960,7 @@ namespace ecg {
 		is_vertex_of_triangle_func +
 		is_point_in_triangle_func +
 		get_intersection_point_func +
-		NAME_OF(
+		SCRIPT(
 			__kernel void is_mesh_self_intersected(
 				__global float* vertexes, uint32_t vertexes_cnt,
 				__global uint32_t * indexes, uint32_t indexes_cnt,
@@ -1008,7 +1008,7 @@ namespace ecg {
 	const std::string triangulate_mesh_name = "triangulate_mesh";
 	const std::string triangulate_mesh_code =
 		typedef_uint32_t +
-		NAME_OF(
+		SCRIPT(
 			__kernel void triangulate_mesh(
 				__global uint32_t * old_indexes, uint32_t old_indexes_size,
 				__global uint32_t * new_indexes, uint32_t new_indexes_size,
@@ -1043,7 +1043,7 @@ namespace ecg {
 		get_face_normal +
 		get_vert_len +
 		get_vertex +
-		NAME_OF(
+		SCRIPT(
 			__kernel void compute_volume(
 				__global float* vertexes, uint32_t vertexes_size,
 				__global uint32_t* indexes, uint32_t indexes_size,
@@ -1082,7 +1082,7 @@ namespace ecg {
 		get_face_normal +
 		get_vert_len +
 		get_vertex +
-		NAME_OF(
+		SCRIPT(
 			__kernel void compute_faces_normals(
 				__global float* vertexes, uint32_t vertexes_size,
 				__global uint32_t * indexes, uint32_t indexes_size,
@@ -1108,7 +1108,7 @@ namespace ecg {
 		cl_structs::get_face_func +
 		get_face_normal +
 		get_vertex +
-		NAME_OF(
+		SCRIPT(
 			__kernel void compute_vertex_normals(
 				__global float3* vertexes, uint32_t vertexes_size,
 				__global uint32_t* indexes, uint32_t indexes_size,
@@ -1149,7 +1149,7 @@ namespace ecg {
 		cl_structs::get_face_func +
 		cl_structs::faces_has_shared_edge_func +
 		get_vertex +
-		NAME_OF(
+		SCRIPT(
 			__kernel void center_point_simplification(
 				__global float3* vertexes, uint32_t vertexes_size,
 				__global uint32_t* indexes, uint32_t indexes_size,
@@ -1183,28 +1183,28 @@ namespace ecg {
 		);
 
 		const std::string ray_cast_func =
-		NAME_OF(
-			inline bool ray_intersects_triangle(float3 p, float3 dir, float3 s0, float3 s1, float3 s2, float3* intersect) {
-				const float epsilon = 1E-06f;
-				float3 ab = s1 - s0;
-				float3 cb = s2 - s0;
+			SCRIPT(
+				inline bool ray_intersects_triangle(float3 p, float3 dir, float3 s0, float3 s1, float3 s2, float3* intersect) {
+					const float epsilon = 1E-06f;
+					float3 ab = s1 - s0;
+					float3 cb = s2 - s0;
 
-				float3 normal = cross(ab, cb);
+					float3 normal = cross(ab, cb);
 
-				float d = -dot(normal, s0);
-				float denom = dot(normal, dir);
-				if (fabs(denom) < epsilon) return false;
+					float d = -dot(normal, s0);
+					float denom = dot(normal, dir);
+					if (fabs(denom) < epsilon) return false;
 
-				float t = -(dot(normal, p) + d) / denom;
-				if (t < 0.0f) return false;
+					float t = -(dot(normal, p) + d) / denom;
+					if (t < 0.0f) return false;
 
-				*intersect = p + dir * t;
-				return true;
-			}
-		);
+					*intersect = p + dir * t;
+					return true;
+				}
+			);
 
 		const std::string check_is_point_in_face_func =
-			NAME_OF(
+			SCRIPT(
 				bool check_is_point_in_face( \n
 					float3 s0, float3 s1, float3 s2, \n
 					float3 p \n
@@ -1233,7 +1233,7 @@ namespace ecg {
 
 		const std::string intersect_face_and_line_func =
 			enable_atomics_def +
-			NAME_OF(
+			SCRIPT(
 				void intersect_face_and_line( \n
 					float3 s0, float3 s1, float3 s2, \n
 					float3 p0, float3 p1, \n\n
@@ -1296,7 +1296,7 @@ namespace ecg {
 			check_is_point_in_face_func +
 			intersect_face_and_line_func +
 			get_vertex +
-			NAME_OF(
+			SCRIPT(
 				__kernel void intersect_two_meshes(
 					__global float * m1_vertexes, int m1_vertexes_size, \n
 					__global float * m2_vertexes, int m2_vertexes_size, \n \n
@@ -1344,7 +1344,7 @@ namespace ecg {
 			check_is_point_in_face_func +
 			ray_cast_func +
 			get_vertex +
-			NAME_OF(
+			SCRIPT(
 				__kernel void check_is_point_in_mesh( \n
 					__global float* m_vertexes, unsigned int m_vertexes_size, \n
 					__global unsigned int* m_indexes, unsigned int m_indexes_size, \n

@@ -1,6 +1,6 @@
 #include <ecg_api.h>
 
-#include <core/ecg_subprograms.h>
+#include <core/ecg_cl_programs.h>
 #include <core/ecg_host_ctrl.h>
 #include <core/ecg_internal.h>
 #include <core/ecg_program.h>
@@ -43,7 +43,7 @@ namespace ecg {
 			default_mesh_check(m2, op_res, status);
 
 			cl::Program::Sources sources = { intersect_two_meshes_code };
-			auto program = ecg_program::get_program(context, device, sources, intersect_two_meshes_name);
+			auto program = ecg_program_wrapper::get_program(context, device, sources, intersect_two_meshes_name);
 
 			cl_uint m1_faces_cnt = m1->indexes_size / 3;
 			std::vector<uint32_t> vrt_offsets;
@@ -148,7 +148,7 @@ namespace ecg {
 			op_res = queue.enqueueReadBuffer(faces_buffer, CL_FALSE, 0, faces_buffer_size, int_faces.data());
 			queue.finish();
 
-			auto [opt_vrt, opt_ind] = optimize_intersection_set(intersections, int_faces);
+			auto [opt_vrt, opt_ind] = optimize_intersection(intersections, int_faces);
 			intersection_set_t temp_int_set;
 
 			res.vrt = allocate_array<vec3_base>(opt_vrt.size());
@@ -198,7 +198,7 @@ namespace ecg {
 					vec3_base s1 = vertexes[face.ind_2];
 					vec3_base s2 = vertexes[face.ind_3];
 
-					if (ray_intersects_triangle(vertex, dir, s0, s1, s2)) {
+					if (ray_hits_triangle(vertex, dir, s0, s1, s2)) {
 						++intersections;
 					}
 				}
@@ -421,7 +421,7 @@ namespace ecg {
 
 		auto int_set_v1 = get_intersection_points(m1, m2, status);
 		auto vrt = add_interior_intersection_points(m1, m2, &int_set_v1, status);
-		auto convex = create_convex_hull(vrt, status);
+		auto convex = hulls::create_convex_hull(vrt, status);
 
 		return convex;
 	}

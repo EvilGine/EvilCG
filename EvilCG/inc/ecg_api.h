@@ -51,7 +51,8 @@ namespace ecg
 	/// </summary>
 	enum ecg_file_type {
 		ECG_OBJ_FILE,
-		ECG_RAW_FILE,
+		//ECG_RAW_FILE,
+		ECG_UNKNOWN_TYPE,
 	};
 
 #if defined(ECG_USE_SPDLOG)
@@ -73,38 +74,6 @@ namespace ecg
 	/// </summary>
 	/// <returns></returns>
 	ECG_API void cleanup_all();
-
-	/// <summary>
-	/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
-	/// The AABB is a box aligned with the coordinate axes that encloses the mesh, providing 
-	/// the minimum and maximum points in each axis direction.
-	/// </summary>
-	/// <param name="mesh">Pointer to the mesh data structure containing the vertices and geometry information.</param>
-	/// <param name="status">Optional pointer to an ecg_status variable that will hold the status of the function execution. 
-	/// The status will indicate success or describe any errors encountered during computation.</param>
-	/// <returns>A bounding_box structure containing the minimum and maximum points of the AABB.</returns>
-	ECG_API bounding_box compute_aabb(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
-	
-	/// <summary>
-	/// Converts a bounding_box structure to a full_bounding_box structure, adding additional information 
-	/// as required. The full_bounding_box structure typically extends the bounding box details 
-	/// for use in advanced bounding calculations or rendering applications.
-	/// </summary>
-	/// <param name="bb">A bounding_box structure representing the axis-aligned bounding box.</param>
-	/// <returns>A full_bounding_box structure with extended bounding details derived from the given bounding_box.</returns>
-	ECG_API full_bounding_box bb_to_full_bb(const bounding_box* bb);
-
-	/// <summary>
-	/// Computes the Oriented Bounding Box (OBB) for a given 3D mesh. 
-	/// The OBB is a bounding box that is not constrained to align with the coordinate axes, 
-	/// allowing it to enclose the mesh more tightly in 3D space. This can be useful for collision detection and 
-	/// physics simulations where a more precise bounding shape is required.
-	/// </summary>
-	/// <param name="mesh">Pointer to the mesh data structure containing the vertices and geometry information.</param>
-	/// <param name="status">Optional pointer to an ecg_status variable that will hold the status of the function execution. 
-	/// The status will indicate success or describe any errors encountered during computation.</param>
-	/// <returns>A full_bounding_box structure representing the OBB for the specified mesh.</returns>
-	ECG_API full_bounding_box compute_obb(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 	
 	/// <summary>
 	/// Computes the sum of all vertex positions in the specified mesh.
@@ -253,7 +222,14 @@ namespace ecg
 	/// <param name="mesh"></param>
 	/// <param name="status"></param>
 	/// <returns></returns>
-	ECG_API void save_ecg_mesh(const ecg_mesh_t* mesh, const char* filename, ecg_file_type fl_type, ecg_status* status = nullptr);
+	ECG_API void save_mesh(const ecg_mesh_t* mesh, const char* filename, ecg_file_type fl_type, ecg_status* status = nullptr);
+
+	/// <summary>
+	/// Load mesh from file.
+	/// </summary>
+	/// <param name="filename"></param>
+	/// <returns></returns>
+	ECG_API ecg_internal_mesh_t load_ecg_mesh(const char* filename);
 
 	/// <summary>
 	/// Get intersection of two meshes.
@@ -264,13 +240,47 @@ namespace ecg
 	/// <returns></returns>
 	ECG_API ecg_internal_mesh_t compute_intersection(const ecg_mesh_t* m1, const ecg_mesh_t* m2, ecg_status* status = nullptr);
 
-	/// <summary>
-	/// Function for creating a convex hull from a set of 3D vertexes.
-	/// </summary>
-	/// <param name="vertexes"></param>
-	/// <param name="status"></param>
-	/// <returns></returns>
-	ECG_API ecg_internal_mesh_t create_convex_hull(const ecg_array_t vrt_arr, ecg_status* status = nullptr);
+	namespace hulls {
+		/// <summary>
+		/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
+		/// The AABB is a box aligned with the coordinate axes that encloses the mesh, providing 
+		/// the minimum and maximum points in each axis direction.
+		/// </summary>
+		/// <param name="mesh">Pointer to the mesh data structure containing the vertices and geometry information.</param>
+		/// <param name="status">Optional pointer to an ecg_status variable that will hold the status of the function execution. 
+		/// The status will indicate success or describe any errors encountered during computation.</param>
+		/// <returns>A bounding_box structure containing the minimum and maximum points of the AABB.</returns>
+		ECG_API bounding_box compute_aabb(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
+
+		/// <summary>
+		/// Converts a bounding_box structure to a full_bounding_box structure, adding additional information 
+		/// as required. The full_bounding_box structure typically extends the bounding box details 
+		/// for use in advanced bounding calculations or rendering applications.
+		/// </summary>
+		/// <param name="bb">A bounding_box structure representing the axis-aligned bounding box.</param>
+		/// <returns>A full_bounding_box structure with extended bounding details derived from the given bounding_box.</returns>
+		ECG_API full_bounding_box bb_to_full_bb(const bounding_box* bb);
+
+		/// <summary>
+		/// Computes the Oriented Bounding Box (OBB) for a given 3D mesh. 
+		/// The OBB is a bounding box that is not constrained to align with the coordinate axes, 
+		/// allowing it to enclose the mesh more tightly in 3D space. This can be useful for collision detection and 
+		/// physics simulations where a more precise bounding shape is required.
+		/// </summary>
+		/// <param name="mesh">Pointer to the mesh data structure containing the vertices and geometry information.</param>
+		/// <param name="status">Optional pointer to an ecg_status variable that will hold the status of the function execution. 
+		/// The status will indicate success or describe any errors encountered during computation.</param>
+		/// <returns>A full_bounding_box structure representing the OBB for the specified mesh.</returns>
+		ECG_API full_bounding_box compute_obb(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
+
+		/// <summary>
+		/// Function for creating a convex hull from a set of 3D vertexes.
+		/// </summary>
+		/// <param name="vertexes"></param>
+		/// <param name="status"></param>
+		/// <returns></returns>
+		ECG_API ecg_internal_mesh_t create_convex_hull(const ecg_array_t vrt_arr, ecg_status* status = nullptr);
+	}
 
 	// [-] Not implemented
 	//ECG_API ecg_internal_mesh smooth_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
