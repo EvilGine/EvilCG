@@ -1,10 +1,8 @@
 #ifndef ECG_API_H
 #define ECG_API_H
 #include <help/ecg_status.h>
-#include <help/ecg_geom.h>
-
 #include <ecg_api_define.h>
-#include <ecg_global.h>
+#include <help/ecg_geom.h>
 
 #if defined(ENABLE_ECG_CL) && defined(__cplusplus)
 	#include <core/ecg_host_ctrl.h>
@@ -16,9 +14,8 @@
 #endif
 
 #ifdef __cplusplus
-namespace ecg	
+namespace ecg {
 #endif
-{
 	/// <summary>
 	/// Compare results between two meshes.
 	/// </summary>
@@ -55,7 +52,7 @@ namespace ecg
 		ECG_UNKNOWN_TYPE,
 	};
 
-#if defined(ECG_USE_SPDLOG)
+#if defined(ECG_USE_SPDLOG) && __cplusplus
 	/// <summary>
 	/// Init logger for more information
 	/// </summary>
@@ -229,7 +226,7 @@ namespace ecg
 	/// </summary>
 	/// <param name="filename"></param>
 	/// <returns></returns>
-	ECG_API ecg_internal_mesh_t load_ecg_mesh(const char* filename);
+	ECG_API ecg_internal_mesh_t load_mesh(const char* filename, ecg_status* status = nullptr);
 
 	/// <summary>
 	/// Get intersection of two meshes.
@@ -240,7 +237,9 @@ namespace ecg
 	/// <returns></returns>
 	ECG_API ecg_internal_mesh_t compute_intersection(const ecg_mesh_t* m1, const ecg_mesh_t* m2, ecg_status* status = nullptr);
 
+	#ifdef __cplusplus
 	namespace hulls {
+	#endif
 		/// <summary>
 		/// Computes the Axis-Aligned Bounding Box (AABB) for a given 3D mesh. 
 		/// The AABB is a box aligned with the coordinate axes that encloses the mesh, providing 
@@ -280,10 +279,22 @@ namespace ecg
 		/// <param name="status"></param>
 		/// <returns></returns>
 		ECG_API ecg_internal_mesh_t create_convex_hull(const ecg_array_t vrt_arr, ecg_status* status = nullptr);
+	#ifdef __cplusplus
 	}
+	#endif
+
+	/// <summary>
+	/// Convert internal_mesh_t to mesh_t.
+	/// </summary>
+	/// <param name="mesh"></param>
+	/// <returns></returns>
+	ECG_API ecg_mesh_t get_mesh_from_internal_mesh(const ecg_internal_mesh_t mesh);
 
 	// [-] Not implemented
 	//ECG_API ecg_internal_mesh smooth_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
+
+#ifdef __cplusplus
 }
+#endif
 
 #endif

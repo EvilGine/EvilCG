@@ -17,3 +17,6 @@ project (
 # Subdirectories
 add_subdirectory(./EvilCG EvilCG)
 add_subdirectory(./Tests Tests)
+
+# Examples
+add_subdirectory(./Examples/Hulls Hulls)

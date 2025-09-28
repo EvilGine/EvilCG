@@ -9,10 +9,8 @@
 	// #elif defined(OPENCL_BUILD)
 #else
 	#ifdef __APPLE__
-		#include <core/ecg_cl_version.h>	
 		#include <OpenCL/opencl.h>
 	#else
-		#include <core/ecg_cl_version.h>
 		#include <CL/opencl.hpp>
 	#endif
 #endif
