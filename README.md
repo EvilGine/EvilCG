@@ -1,32 +1,27 @@
-# EvilCG - Computational Graphics Library
+# EvilCG - Computational Geometry Prototype
 
-**EvilCG** is a comprehensive C++ library tailored for computational graphics, providing utilities for geometric analysis, mesh manipulation, and transformations. With functionality ranging from bounding box calculations to mesh smoothing, EvilCG simplifies complex 3D computations and assists developers in rendering, collision detection, and physics simulation tasks.
+**EvilCG** is a C++ library prototype for computational geometry, developed as a personal initiative.  
+It provides tools for mesh analysis, geometric computations, and basic 3D operations.
 
 ---
 
 ## Features
 
-- **Bounding Box Computation**
-  - Calculate Axis-Aligned Bounding Boxes (AABB) and Oriented Bounding Boxes (OBB) for precise spatial enclosures.
-- **Mesh Operations**
-  - Compute mesh properties such as center, surface area, vertex summation, and covariance matrix.
-- **Mesh Comparison**
-  - Compare two meshes, including transformations, to determine equivalency.
-- **Advanced Functions**
-  - Nearest vertex search, manifold checking, and closure validation for mesh topologies.
-- **Extension Points**
-  - Additional advanced features, including volume calculation, mesh simplification, and smoothing, planned for future releases.
+- Compute bounding boxes (AABB and OBB) for meshes
+- Mesh operations: center, vertex sum, surface area, covariance matrix
+- Mesh checks: closure, manifold, self-intersection
+- Intersection and convex hull computations (Prototype)
+- Loading, saving, and basic triangulation of meshes
 
 ---
 
-## Installation
+## Usage
+The library is under active development. Examples and demonstration screenshots will be added in the examples/ folder in future releases.
 
-To integrate EvilCG into your project:
+---
 
-1. Clone the repository or download the source files.
-2. Include the main headers:
-   ```cpp
-   #include <ecg_global.h>
-   #include <api_define.h>
-   #include <ecg_geom_.h>
-   #include <ecg_api_.h>
+## License
+MIT License – Non-Commercial (NC) © 2025 Rurik Knyazyuk (aka Antag0nist)
+
+The library may only be used for non-commercial purposes. Commercial use requires separate permission from the copyright holder.
+See the full license in [LICENSE](LICENSE) file.

@@ -28,7 +28,7 @@ namespace ecg::hulls {
 	void internal_compute_aabb(
 		cl::Context& context, cl::CommandQueue& queue,
 		cl::Buffer& aabb_result, cl::Buffer& vertexes_buffer,
-		cl_int vert_size, std::shared_ptr<ecg_program>& program, ecg_status_handler& op_res,
+		cl_int vert_size, std::shared_ptr<ecg_program_wrapper>& program, ecg_status_handler& op_res,
 		cl::NDRange global, cl::NDRange local,
 		bounding_box& result_bb
 	) {
@@ -57,7 +57,7 @@ namespace ecg::hulls {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_aabb_code };
-			auto program = ecg_program::get_program(context, dev, sources, compute_aabb_name);
+			auto program = ecg_program_wrapper::get_program(context, dev, sources, compute_aabb_name);
 
 			const size_t buffer_size = sizeof(mesh->vertexes[0]) * mesh->vertexes_size;
 			cl::Buffer vertexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, buffer_size);
@@ -109,7 +109,7 @@ namespace ecg::hulls {
 				compute_obb_code
 			};
 
-			auto compute_obb = ecg_program::get_program(context, dev, obb_sources, compute_obb_name);
+			auto compute_obb = ecg_program_wrapper::get_program(context, dev, obb_sources, compute_obb_name);
 			cl::NDRange global = mesh->vertexes_size;
 			cl::NDRange local = cl::NullRange;
 

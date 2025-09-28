@@ -1,7 +1,7 @@
 #include <help/ecg_math.h>
 
 namespace ecg {
-    Eigen::Matrix3f convert_to_eigen_mat(const mat3_base& mat) {
+    Eigen::Matrix3f convert(const mat3_base& mat) {
         Eigen::Matrix3f eigenMat;
         eigenMat(0, 0) = mat.m00; eigenMat(0, 1) = mat.m01; eigenMat(0, 2) = mat.m02;
         eigenMat(1, 0) = mat.m10; eigenMat(1, 1) = mat.m11; eigenMat(1, 2) = mat.m12;
@@ -9,7 +9,7 @@ namespace ecg {
         return eigenMat;
     }
 
-    mat3_base convert_from_eigen(const Eigen::Matrix3f& eigen_mat) {
+    mat3_base convert(const Eigen::Matrix3f& eigen_mat) {
         mat3_base mat;
         mat.m00 = eigen_mat(0, 0);
         mat.m01 = eigen_mat(0, 1);
@@ -26,7 +26,7 @@ namespace ecg {
         return mat;
     }
 
-    vec3_base convert_from_eigen(const Eigen::Vector3f& eigen_vec) {
+    vec3_base convert(const Eigen::Vector3f& eigen_vec) {
         return vec3_base(eigen_vec(0), eigen_vec(1), eigen_vec(2));
     }
 
@@ -53,9 +53,54 @@ namespace ecg {
     }
 
     mat3_base invert(const mat3_base& mat) noexcept {
-        Eigen::Matrix3f eigen_mat = convert_to_eigen_mat(mat);
+        Eigen::Matrix3f eigen_mat = convert(mat);
         Eigen::Matrix3f eigen_inv = eigen_mat.inverse();
-        return convert_from_eigen(eigen_inv);
+        return convert(eigen_inv);
+    }
+
+    svd_t compute_svd(const mat3_base& m) {
+        Eigen::JacobiSVD<Eigen::Matrix3f> svd(
+            convert(m), Eigen::ComputeFullU | Eigen::ComputeFullV
+        );
+
+        return svd_t{
+            convert(svd.matrixU()),
+            convert(svd.singularValues()),
+            convert(svd.matrixV())
+        };
+    }
+
+    mat3_base make_transform(const vec3_base& z_vec, const vec3_base& y_vec) {
+        vec3_base z_n = normalize(z_vec);
+        vec3_base y_n = normalize(y_vec);
+        vec3_base x_n = normalize(cross(y_n, z_n));
+
+        // Ensure orthogonality
+        y_n = cross(z_n, x_n);
+
+        return mat3_base{
+            x_n.x, y_n.x, z_n.x,
+            x_n.y, y_n.y, z_n.y,
+            x_n.z, y_n.z, z_n.z
+        };
+    }
+
+    float distance(vec3_base pt, vec3_base s0, vec3_base s1, vec3_base s2) {
+        vec3_base s0s1 = s1 - s0;
+        vec3_base s0s2 = s2 - s0;
+
+        vec3_base normal = cross(s0s1, s0s2);
+        float distance = abs(dot(normal, pt - s0)) / length(normal);
+        return distance;
+    }
+    
+    float distance(vec3_base pt, vec3_base v0, vec3_base v1) {
+        vec3_base ap = pt - v0;
+        vec3_base line_dir = v1 - v0;
+
+        vec3_base cross_prod = cross(ap, line_dir);
+        float dist = length(cross_prod) / length(line_dir);
+        return dist;
     }
 
     float length(const vec3_base& vec) {
@@ -77,48 +122,5 @@ namespace ecg {
 
     float dot(const vec3_base& v1, const vec3_base& v2) {
         return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-    }
-
-    svd_t compute_svd(const mat3_base& mat) {
-        auto eigen_mat = convert_to_eigen_mat(mat);
-        Eigen::JacobiSVD<Eigen::Matrix3f> svd(eigen_mat, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-        Eigen::Matrix3f u = svd.matrixU();
-        Eigen::Vector3f sigma = svd.singularValues();
-        Eigen::Matrix3f v = svd.matrixV();
-
-        return svd_t{ convert_from_eigen(u), convert_from_eigen(sigma), convert_from_eigen(v) };
-    }
-
-    mat3_base make_transform(const vec3_base& z_vec, const vec3_base& y_vec) {
-        vec3_base x_vec = cross(y_vec, z_vec);
-
-        vec3_base z_norm = normalize(z_vec);
-        vec3_base y_norm = normalize(y_vec);
-        vec3_base x_norm = normalize(x_vec);
-
-        return mat3_base{
-            x_norm.x, y_norm.x, z_norm.x,
-            x_norm.y, y_norm.y, z_norm.y,
-            x_norm.z, y_norm.z, z_norm.z
-        };
-    }
-
-    float distance(vec3_base pt, vec3_base s0, vec3_base s1, vec3_base s2) {
-        vec3_base s0s1 = s1 - s0;
-        vec3_base s0s2 = s2 - s0;
-
-        vec3_base normal = cross(s0s1, s0s2);
-        float distance = abs(dot(normal, pt - s0)) / length(normal);
-        return distance;
-    }
-    
-    float distance(vec3_base pt, vec3_base v0, vec3_base v1) {
-        vec3_base ap = pt - v0;
-        vec3_base line_dir = v1 - v0;
-
-        vec3_base cross_prod = cross(ap, line_dir);
-        float dist = length(cross_prod) / length(line_dir);
-        return dist;
     }
 }

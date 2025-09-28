@@ -1,48 +1,52 @@
 #include <core/ecg_program.h>
 
 namespace ecg {
-	std::shared_ptr<ecg_program> ecg_program::get_program(cl::Context& cont, cl::Device& dev, cl::Program::Sources& srcs, std::string prog_name) {
-		static std::unordered_map<std::string, std::shared_ptr<ecg_program>> g_cached_programs;
-		auto it = g_cached_programs.find(prog_name);
+	std::shared_ptr<ecg_program_wrapper> ecg_program_wrapper::get_program(
+		cl::Context& context, cl::Device& device,
+		cl::Program::Sources& sources, std::string name
+	) {
+		static std::unordered_map<std::string, std::shared_ptr<ecg_program_wrapper>> cache;
+		auto it = cache.find(name);
+		if (it != cache.end()) return it->second;
 
-		if (it != g_cached_programs.end()) return it->second;
-		else {
-			auto prog = std::make_shared<ecg_program>(cont, dev, srcs);
-			g_cached_programs[prog_name] = prog;
-		}
-
-		return g_cached_programs[prog_name];
+		auto prog = std::make_shared<ecg_program_wrapper>(context, device, sources);
+		cache[name] = prog;
+		return prog;
 	}
 
-	ecg_program::ecg_program(cl::Context& cont, cl::Device& dev, cl::Program::Sources& srcs) {
-		m_is_built = true;
+	ecg_program_wrapper::ecg_program_wrapper(
+		cl::Context& context, cl::Device& device, cl::Program::Sources& sources
+	) : m_device(device), m_is_built(false) {
 		try {
-			cl_int op_res = CL_SUCCESS;
-			m_program = cl::Program(cont, srcs, &op_res);
-			op_res = m_program.build(dev);
-			m_device = dev;
+			cl_int err = CL_SUCCESS;
+			m_program = cl::Program(context, sources, &err);
+			if (err != CL_SUCCESS) return;
 
-			if (op_res != CL_SUCCESS) {
-				cl_build_status status = m_program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(dev);
-				if (status == CL_BUILD_ERROR) {
-					// Get the build log
-					std::string name = dev.getInfo<CL_DEVICE_NAME>();
-					std::string buildlog = m_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(dev);
-					std::cout << "Build log for " << name << ":" << std::endl << buildlog << std::endl;
-				}
-				m_is_built = false;
+			err = m_program.build(m_device);
+			m_is_built = (err == CL_SUCCESS);
+
+			if (!m_is_built) {
+				std::string log = m_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
+				std::cerr << "[OpenCL Build Error] Device: "
+					<< m_device.getInfo<CL_DEVICE_NAME>() << "\n"
+					<< log << std::endl;
 			}
 		}
+		catch (const std::exception& e) {
+			std::cerr << "[Exception] OpenCL build failed: " << e.what() << std::endl;
+			m_is_built = false;
+		}
 		catch (...) {
+			std::cerr << "[Unknown Exception] OpenCL build failed" << std::endl;
 			m_is_built = false;
 		}
 	}
 
-	const bool ecg_program::is_program_was_built() const {
+	const bool ecg_program_wrapper::is_program_was_built() const {
 		return m_is_built;
 	}
 
-	cl::Program ecg_program::get_program() const {
+	cl::Program ecg_program_wrapper::get_program() const {
 		return m_program;
 	}
 }

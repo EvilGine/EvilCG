@@ -6,9 +6,9 @@
 #include <Eigen/Dense>
 
 namespace ecg {
-    mat3_base convert_from_eigen(const Eigen::Matrix3f& eigen_mat);
-    vec3_base convert_from_eigen(const Eigen::Vector3f& eigen_vec);
-    Eigen::Matrix3f convert_to_eigen_mat(const mat3_base& mat);
+    mat3_base convert(const Eigen::Matrix3f& eigen_mat);
+    vec3_base convert(const Eigen::Vector3f& eigen_vec);
+    Eigen::Matrix3f convert(const mat3_base& mat);
 
     mat3_base make_transform(const vec3_base& z_vec, const vec3_base& y_vec);
     mat3_base invert(const mat3_base& mat) noexcept;

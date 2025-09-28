@@ -58,7 +58,7 @@ namespace ecg {
 
 			const size_t max_work_group_size = ctrl.get_max_work_group_size();
 			cl::Program::Sources sources = { summ_vertexes_code };
-			auto program = ecg_program::get_program(context, dev, sources, summ_vertexes_name);
+			auto program = ecg_program_wrapper::get_program(context, dev, sources, summ_vertexes_name);
 
 			auto internal_summ = [&](const vec3_base* data, cl_int data_size) {
 				const float temp_groups = static_cast<float>(data_size) / max_work_group_size;
@@ -125,7 +125,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_surface_area_code };
-			auto program = ecg_program::get_program(context, dev, sources, compute_surface_area_name);
+			auto program = ecg_program_wrapper::get_program(context, dev, sources, compute_surface_area_name);
 
 			const cl_int vert_buffer_sz = sizeof(mesh->vertexes[0]) * mesh->vertexes_size;
 			const cl_int ind_buffer_sz = sizeof(mesh->indexes[0]) * mesh->indexes_size;
@@ -214,7 +214,7 @@ namespace ecg {
 				compute_obb_code
 			};
 
-			auto compute_obb = ecg_program::get_program(context, dev, obb_sources, compute_cov_mat_name);
+			auto compute_obb = ecg_program_wrapper::get_program(context, dev, obb_sources, compute_cov_mat_name);
 			cl::NDRange global = mesh->vertexes_size;
 			cl::NDRange local = cl::NullRange;
 
@@ -258,7 +258,7 @@ namespace ecg {
 			cl::Buffer ind_buffer = cl::Buffer(context, CL_MEM_READ_ONLY, ind_buffer_size);
 
 			cl::Program::Sources sources = { is_mesh_closed_code };
-			auto is_mesh_close_program = ecg_program::get_program(context, dev, sources, is_mesh_closed_name);
+			auto is_mesh_close_program = ecg_program_wrapper::get_program(context, dev, sources, is_mesh_closed_name);
 			
 			op_res = queue.enqueueWriteBuffer(result_buffer, CL_FALSE, 0, sizeof(bool), &result);
 			op_res = queue.enqueueWriteBuffer(ind_buffer, CL_FALSE, 0, ind_buffer_size, mesh->indexes);
@@ -303,9 +303,9 @@ namespace ecg {
 			cl::Program::Sources is_mesh_vertex_manifold_src = { is_mesh_vertexes_manifold_code };
 			cl::Program::Sources is_mesh_self_intersected_src = { is_mesh_self_intersected_code };
 
-			auto is_mesh_closed_prog = ecg_program::get_program(context, dev, is_mesh_closed_src, is_mesh_closed_name);
-			auto is_mesh_self_intersected_prog = ecg_program::get_program(context, dev, is_mesh_self_intersected_src, is_mesh_self_intersected_name);
-			auto is_mesh_vertexes_manifold_prog = ecg_program::get_program(context, dev, is_mesh_vertex_manifold_src, is_mesh_vertexes_manifold_name);
+			auto is_mesh_closed_prog = ecg_program_wrapper::get_program(context, dev, is_mesh_closed_src, is_mesh_closed_name);
+			auto is_mesh_self_intersected_prog = ecg_program_wrapper::get_program(context, dev, is_mesh_self_intersected_src, is_mesh_self_intersected_name);
+			auto is_mesh_vertexes_manifold_prog = ecg_program_wrapper::get_program(context, dev, is_mesh_vertex_manifold_src, is_mesh_vertexes_manifold_name);
 
 			cl_int vrt_size = sizeof(mesh->vertexes[0]) / sizeof(float);
 
@@ -377,7 +377,7 @@ namespace ecg {
 
 			cl_int vrt_size = sizeof(mesh->vertexes[0]) / sizeof(float);
 			cl::Program::Sources source = { is_mesh_self_intersected_code };
-			auto is_self_intersected_prog = ecg_program::get_program(context, dev, source, is_mesh_self_intersected_name);
+			auto is_self_intersected_prog = ecg_program_wrapper::get_program(context, dev, source, is_mesh_self_intersected_name);
 
 			cl_uint indexes_size = mesh->indexes_size;
 			cl_uint indexes_buffer_size = sizeof(mesh->indexes[0]) * mesh->indexes_size;
@@ -450,7 +450,7 @@ namespace ecg {
 			cl::Buffer old_indexes_buffer = cl::Buffer(context, CL_MEM_READ_ONLY,  old_indexes_buffer_size, nullptr, &err_create_buffer); op_res = err_create_buffer;
 
 			cl::Program::Sources sources = { triangulate_mesh_code };
-			auto program = ecg_program::get_program(context, dev, sources, triangulate_mesh_name);
+			auto program = ecg_program_wrapper::get_program(context, dev, sources, triangulate_mesh_name);
 
 			cl::NDRange global = old_faces_cnt;
 			cl::NDRange local  = cl::NullRange;
@@ -492,7 +492,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_volume_code };
-			auto program = ecg_program::get_program(context, dev, sources, compute_volume_name);
+			auto program = ecg_program_wrapper::get_program(context, dev, sources, compute_volume_name);
 
 			cl_uint indexes_size = mesh->indexes_size;
 			cl_uint faces_cnt = mesh->indexes_size / 3;
@@ -550,7 +550,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_faces_normals_code };
-			auto program = ecg_program::get_program(context, dev, sources, compute_faces_normals_name);
+			auto program = ecg_program_wrapper::get_program(context, dev, sources, compute_faces_normals_name);
 
 			cl_uint indexes_size = mesh->indexes_size;
 			cl_uint faces_cnt = mesh->indexes_size / 3;
@@ -603,7 +603,7 @@ namespace ecg {
 			auto& dev = ctrl.get_device();
 
 			cl::Program::Sources sources = { compute_vertex_normals_code };
-			auto program = ecg_program::get_program(context, dev, sources, compute_vertex_normals_name);
+			auto program = ecg_program_wrapper::get_program(context, dev, sources, compute_vertex_normals_name);
 
 			cl_uint indexes_size = mesh->indexes_size;
 			cl_uint vertexes_size = mesh->vertexes_size;

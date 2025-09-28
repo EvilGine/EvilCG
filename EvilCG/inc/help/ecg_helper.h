@@ -13,8 +13,9 @@ namespace ecg {
 	/// <param name="vertexes"></param>
 	/// <param name="indexes"></param>
 	/// <returns></returns>
-	std::pair<std::vector<vec3_base>, std::vector<uint32_t>> optimize_geom_data(
-		const std::vector<vec3_base>& vertexes, const std::vector<uint32_t>& indexes
+	std::pair<std::vector<vec3_base>, std::vector<uint32_t>> optimize_geometry(
+		const std::vector<vec3_base>& vertexes, 
+		const std::vector<uint32_t>& indexes
 	);
 	
 	/// <summary>
@@ -23,8 +24,9 @@ namespace ecg {
 	/// <param name="vertexes"></param>
 	/// <param name="indexes"></param>
 	/// <returns></returns>
-	std::pair<std::vector<vec3_base>, std::vector<uint32_t>> optimize_intersection_set(
-		const std::vector<vec3_base>& vertexes, const std::vector<uint32_t>& indexes
+	std::pair<std::vector<vec3_base>, std::vector<uint32_t>> optimize_intersection(
+		const std::vector<vec3_base>& vertices,
+		const std::vector<uint32_t>& indices
 	);
 
 	/// <summary>
@@ -36,7 +38,10 @@ namespace ecg {
 	/// <param name="s1"></param>
 	/// <param name="s2"></param>
 	/// <returns></returns>
-	bool ray_intersects_triangle(vec3_base p, vec3_base dir, vec3_base s0, vec3_base s1, vec3_base s2);
+	bool ray_hits_triangle(
+		const vec3_base& ray_origin, const vec3_base& ray_dir,
+		const vec3_base& v0, const vec3_base& v1, const vec3_base& v2
+	);
 	
 	/// <summary>
 	/// 
@@ -46,7 +51,7 @@ namespace ecg {
 	/// <param name="s1"></param>
 	/// <param name="s2"></param>
 	/// <returns></returns>
-	bool check_is_point_in_face(vec3_base p, vec3_base s0, vec3_base s1, vec3_base s2);
+	bool point_in_triangle(const vec3_base& p, const vec3_base& a, const vec3_base& b, const vec3_base& c);
 
 	/// <summary>
 	/// 

@@ -20,7 +20,7 @@ namespace ecg {
 		auto& dev = ctrl.get_device();
 
 		cl::Program::Sources sources = { center_point_simplification_code };
-		auto program = ecg_program::get_program(context, dev, sources, center_point_simplification_name);
+		auto program = ecg_program_wrapper::get_program(context, dev, sources, center_point_simplification_name);
 
 		cl_uint indexes_size = mesh->indexes_size;
 		cl_uint vertexes_size = mesh->vertexes_size;
