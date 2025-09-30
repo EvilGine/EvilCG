@@ -301,6 +301,7 @@ namespace ecg::hulls {
 			uint64_t best_candidate = UINT64_MAX;
 			float max_dist = 0.0f;
 
+			// Search best candidate
 			auto it = convex_hull_faces.begin();
 			for (auto f_it = convex_hull_faces.begin(); f_it != convex_hull_faces.end(); ++f_it) {
 				if (!f_it->valid) continue;
@@ -324,6 +325,7 @@ namespace ecg::hulls {
 			std::unordered_map<edge_t, int, ecg_hash_func, ecg_compare_func> edge_counter;
 			std::unordered_set<uint64_t> affected_points;
 
+			// Get all faces that see vertex
 			for (auto& face : convex_hull_faces) {
 				if (!face.valid) continue;
 
@@ -340,6 +342,7 @@ namespace ecg::hulls {
 				}
 			}
 
+			// Add new faces for corner edges
 			std::list<convex_face_t> new_faces;
 			for (auto& [edge, cnt] : edge_counter) {
 				if (cnt == 1) {
@@ -349,6 +352,7 @@ namespace ecg::hulls {
 				}
 			}
 
+			// Fill next outer points for new faces
 			for (auto& nf : new_faces) {
 				for (uint64_t idx : affected_points) {
 					if (idx == nf.v0 || idx == nf.v1 || idx == nf.v2) continue;
