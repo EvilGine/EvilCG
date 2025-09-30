@@ -22,7 +22,7 @@ The library is under active development. Examples and demonstration screenshots 
 > The example code also allows exporting `.obj` files so you can test the library yourself.
 
 1) Convex Hull (Folder: Examples -> Hulls)
-![Convex Hull Example](documents/convex-hull.png)
+![Convex Hull Example](Documents/convex-hull.png)
 
 ---
 
