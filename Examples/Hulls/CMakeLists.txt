@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-set(EXAMPLE_NAME hulls_example)
+set(EXAMPLE_NAME HullsExample)
 
 project(
 	${EXAMPLE_NAME}

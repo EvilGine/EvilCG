@@ -55,6 +55,45 @@ namespace ecg {
 		return { optimized_vertices, optimized_indices };
 	}
 
+
+	std::vector<vec3_base> normalize_mesh(
+		const std::span<vec3_base>& vertices
+	) {
+		if (vertices.empty())
+			return {};
+
+		constexpr auto flt_max = std::numeric_limits<float>::max();
+		vec3_base min_v = { +flt_max, +flt_max, +flt_max };
+		vec3_base max_v = { -flt_max, -flt_max, -flt_max };
+		vec3_base center = { 0, 0, 0 };
+
+		for (auto vrt : vertices) {
+			min_v.x = std::min(min_v.x, vrt.x);
+			min_v.y = std::min(min_v.y, vrt.y);
+			min_v.z = std::min(min_v.z, vrt.z);
+
+			max_v.x = std::max(max_v.x, vrt.x);
+			max_v.y = std::max(max_v.y, vrt.y);
+			max_v.z = std::max(max_v.z, vrt.z);
+			
+			center += vrt;
+		}
+		
+		center /= vertices.size();
+		vec3_base size = max_v - min_v;
+		float scale = 2.0f / std::max({ size.x, size.y, size.z });
+
+		std::vector<vec3_base> new_vertexes(vertices.size());
+		size_t vrt_id = 0;
+
+		for (auto& v : vertices) {
+			new_vertexes[vrt_id] = (v - center) * scale;
+			++vrt_id;
+		}
+
+		return new_vertexes;
+	}
+
 	bool ray_hits_triangle(
 		const vec3_base& ray_origin, const vec3_base& ray_dir,
 		const vec3_base& v0, const vec3_base& v1, const vec3_base& v2

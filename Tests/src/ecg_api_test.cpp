@@ -802,7 +802,7 @@ namespace ecg_simplifiation {
 		mesh.vertexes_size = convex_hull.vertexes.arr_size;
 		mesh.indexes_size = convex_hull.indexes.arr_size;
 
-		ecg::save_mesh(&mesh, "res_convex_hull_1.obj", ecg::ecg_file_type::ECG_OBJ_FILE, &status);
+		ecg::save_mesh(&mesh, "Models/res_convex_hull_1", ecg::ecg_file_type::ECG_OBJ_FILE, &status);
 	}
 
 	//TEST(ecg_api, qem_simplification) {

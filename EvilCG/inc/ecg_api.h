@@ -258,7 +258,7 @@ namespace ecg {
 		/// </summary>
 		/// <param name="bb">A bounding_box structure representing the axis-aligned bounding box.</param>
 		/// <returns>A full_bounding_box structure with extended bounding details derived from the given bounding_box.</returns>
-		ECG_API full_bounding_box bb_to_full_bb(const bounding_box* bb);
+		ECG_API full_bounding_box expand_bb(const bounding_box* bb);
 
 		/// <summary>
 		/// Computes the Oriented Bounding Box (OBB) for a given 3D mesh. 
