@@ -32,6 +32,14 @@ namespace ecg {
 	/// <summary>
 	/// 
 	/// </summary>
+	/// <param name="vertices"></param>
+	/// <param name="indices"></param>
+	/// <returns></returns>
+	std::vector<vec3_base> normalize_mesh(const std::span<vec3_base>& vertices);
+
+	/// <summary>
+	/// 
+	/// </summary>
 	/// <param name="p"></param>
 	/// <param name="dir"></param>
 	/// <param name="s0"></param>

@@ -29,7 +29,7 @@ namespace ecg {
 		if (mesh->vertexes != nullptr) {
 			for (size_t id = 0; id < mesh->vertexes_size; ++id) {
 				vec3_base vec = mesh->vertexes[id];
-				file << std::format("v {} {} {}", vec.x, vec.y, vec.z) << std::endl;
+				file << std::format("v {:.6f} {:.6f} {:.6f}", vec.x, vec.y, vec.z) << std::endl;
 			}
 		}
 

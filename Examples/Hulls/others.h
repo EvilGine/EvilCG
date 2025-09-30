@@ -41,7 +41,7 @@ void save_bb_to_obj(const ecg::full_bounding_box* bb, std::string obj_file) {
 }
 
 void save_bb_to_obj(const ecg::bounding_box* bb, std::string obj_file) {
-	ecg::full_bounding_box full_bb = ecg::hulls::bb_to_full_bb(bb);
+	ecg::full_bounding_box full_bb = ecg::hulls::expand_bb(bb);
 	save_bb_to_obj(&full_bb, obj_file);
 }
 

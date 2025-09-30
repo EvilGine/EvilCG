@@ -13,7 +13,8 @@
 #include <help/ecg_geom.h>
 
 namespace ecg::hulls {
-	const float g_convex_epsilon = 1E-06F;
+	// TODO: Should be dynamic parameter
+	const float g_convex_epsilon = 1E-08F;
 
 	struct convex_face_t {
 		uint64_t v0;
@@ -152,7 +153,7 @@ namespace ecg::hulls {
 			op_res = queue.enqueueReadBuffer(res_bb_buffer, CL_FALSE, 0, sizeof(bounding_box), &bb);
 			op_res = queue.finish();
 
-			result_obb = hulls::bb_to_full_bb(&bb);
+			result_obb = hulls::expand_bb(&bb);
 			result_obb.p0 = center + transf * result_obb.p0;
 			result_obb.p1 = center + transf * result_obb.p1;
 			result_obb.p2 = center + transf * result_obb.p2;
@@ -170,7 +171,7 @@ namespace ecg::hulls {
 		return result_obb;
 	}
 
-	full_bounding_box bb_to_full_bb(const bounding_box* bb) {
+	full_bounding_box expand_bb(const bounding_box* bb) {
 		full_bounding_box res;
 
 		res.p0 = bb->min;
@@ -212,7 +213,7 @@ namespace ecg::hulls {
 		for (size_t id = 0; id < global_vertexes.size(); ++id) {
 			if (id == face.v0 || id == face.v1 || id == face.v2) continue;
 			float d = dot(face.normal, global_vertexes[id] - global_vertexes[face.v0]);
-			if (d > 1e-6f) face.outer_vertexes.insert(id);
+			if (d > eps) face.outer_vertexes.insert(id);
 		}
 
 		convex_hull_faces.push_back(face);
@@ -286,96 +287,86 @@ namespace ecg::hulls {
 		return convex_hull_faces;
 	}
 
-	std::list<convex_face_t> expand_hull(std::span<vec3_base>& global_vertexes, std::list<convex_face_t>& convex_hull_faces, vec3_base global_center) {
-		std::list<convex_face_t> new_convex_hull = convex_hull_faces;
+	std::list<convex_face_t> expand_hull(
+		std::span<vec3_base>& global_vertexes,
+		std::list<convex_face_t>& convex_hull_faces,
+		vec3_base global_center)
+	{
 		bool convex_hull_changed = true;
 
 		while (convex_hull_changed) {
-			convex_hull_faces = new_convex_hull;
 			convex_hull_changed = false;
-			new_convex_hull.clear();
 
-			for (auto& face : convex_hull_faces) {
-				if (!face.valid) continue;
-				
-				auto& candidate_indexes = face.outer_vertexes;
-				uint64_t new_candidate_index = UINT64_MAX;
-				bool candidate_was_found = false;
-				float max_dist = 0.0f;
+			uint64_t best_face_idx = UINT64_MAX;
+			uint64_t best_candidate = UINT64_MAX;
+			float max_dist = 0.0f;
 
-				for (uint64_t idx : candidate_indexes) {
-					if (idx == face.v0 || idx == face.v1 || idx == face.v2) continue;
-					float dist = dot(face.normal, global_vertexes[idx] - global_vertexes[face.v0]);
-					if (dist > max_dist) {
-						max_dist = dist;
-						new_candidate_index = idx;
-						candidate_was_found = true;
+			// Search best candidate
+			auto it = convex_hull_faces.begin();
+			for (auto f_it = convex_hull_faces.begin(); f_it != convex_hull_faces.end(); ++f_it) {
+				if (!f_it->valid) continue;
+
+				for (uint64_t idx : f_it->outer_vertexes) {
+					float d = dot(f_it->normal, global_vertexes[idx] - global_vertexes[f_it->v0]);
+					if (d > max_dist) {
+						max_dist = d;
+						best_candidate = idx;
+						best_face_idx = std::distance(convex_hull_faces.begin(), f_it);
 					}
-				}
-
-				if (candidate_was_found && max_dist > g_convex_epsilon) {
-					std::unordered_set<uint64_t> affected_points;
-					vec3_base new_candidate = global_vertexes[new_candidate_index];
-					std::unordered_map<edge_t, uint64_t, ecg_hash_func, ecg_compare_func> edge_counter;
-
-					for (auto& inner_face : convex_hull_faces) {
-						if (!inner_face.valid) continue;
-
-						float d = dot(inner_face.normal, new_candidate - global_vertexes[inner_face.v0]);
-						if (d > g_convex_epsilon) {
-							inner_face.valid = false;
-							affected_points.insert(inner_face.outer_vertexes.begin(), inner_face.outer_vertexes.end());
-
-							++edge_counter[make_edge_struct(inner_face.v0, inner_face.v1)];
-							++edge_counter[make_edge_struct(inner_face.v1, inner_face.v2)];
-							++edge_counter[make_edge_struct(inner_face.v2, inner_face.v0)];
-							inner_face.outer_vertexes.clear();
-						}
-					}
-
-					for (auto& [edge, cnt] : edge_counter) {
-						if (cnt == 1) {
-							convex_face_t new_face;
-							new_face.v0 = edge.a;
-							new_face.v1 = edge.b;
-							new_face.v2 = new_candidate_index;
-
-							vec3_base a = global_vertexes[edge.a];
-							vec3_base b = global_vertexes[edge.b];
-							vec3_base c = global_vertexes[new_candidate_index];
-
-							vec3_base ab = b - a;
-							vec3_base ac = c - a;
-							vec3_base n = cross(ab, ac);
-							float nlen2 = dot(n, n);
-							if (nlen2 < g_convex_epsilon) continue;
-
-							new_face.normal = normalize(n);
-							new_face.center = (a + b + c) / 3.0f;
-							if (dot(new_face.normal, new_face.center - global_center) < 0.0f)
-								new_face.normal = -new_face.normal;
-
-							new_face.valid = true;
-
-							for (uint64_t idx : affected_points) {
-								if (idx == new_face.v0 || idx == new_face.v1 || idx == new_face.v2) continue;
-								if (dot(new_face.normal, global_vertexes[idx] - a) > g_convex_epsilon)
-									new_face.outer_vertexes.insert(idx);
-							}
-
-							new_convex_hull.push_back(std::move(new_face));
-						}
-					}
-
-					convex_hull_changed = true;
-				}
-				else {
-					new_convex_hull.push_back(face);
 				}
 			}
+
+			if (best_candidate == UINT64_MAX || max_dist < g_convex_epsilon)
+				break;
+
+			convex_hull_changed = true;
+			vec3_base new_p = global_vertexes[best_candidate];
+
+			std::unordered_map<edge_t, int, ecg_hash_func, ecg_compare_func> edge_counter;
+			std::unordered_set<uint64_t> affected_points;
+
+			// Get all faces that see vertex
+			for (auto& face : convex_hull_faces) {
+				if (!face.valid) continue;
+
+				float d = dot(face.normal, new_p - global_vertexes[face.v0]);
+				if (d > g_convex_epsilon) {
+					face.valid = false;
+					affected_points.insert(face.outer_vertexes.begin(), face.outer_vertexes.end());
+
+					++edge_counter[make_edge_struct(face.v0, face.v1)];
+					++edge_counter[make_edge_struct(face.v1, face.v2)];
+					++edge_counter[make_edge_struct(face.v2, face.v0)];
+
+					face.outer_vertexes.clear();
+				}
+			}
+
+			// Add new faces for corner edges
+			std::list<convex_face_t> new_faces;
+			for (auto& [edge, cnt] : edge_counter) {
+				if (cnt == 1) {
+					add_face(global_vertexes, new_faces,
+						edge.a, edge.b, best_candidate,
+						global_center, g_convex_epsilon);
+				}
+			}
+
+			// Fill next outer points for new faces
+			for (auto& nf : new_faces) {
+				for (uint64_t idx : affected_points) {
+					if (idx == nf.v0 || idx == nf.v1 || idx == nf.v2) continue;
+					float d = dot(nf.normal, global_vertexes[idx] - global_vertexes[nf.v0]);
+					if (d > g_convex_epsilon)
+						nf.outer_vertexes.insert(idx);
+				}
+			}
+
+			convex_hull_faces.splice(convex_hull_faces.end(), new_faces);
 		}
 
-		return new_convex_hull;
+		convex_hull_faces.remove_if([](auto& f) { return !f.valid; });
+		return convex_hull_faces;
 	}
 
 	ecg_internal_mesh_t create_convex_hull(const ecg_array_t vrt_arr, ecg_status* status) {
@@ -392,8 +383,11 @@ namespace ecg::hulls {
 			std::span<vec3_base> global_vertexes(static_cast<vec3_base*>(vrt_arr.arr_ptr), vrt_arr.arr_size);
 			vec3_base global_center = vec3_base{ 0.0f, 0.0f, 0.0f };
 
-			auto convex_hull_faces = get_initial_tetrahedron(global_vertexes, global_center);
-			auto new_convex_hull = expand_hull(global_vertexes, convex_hull_faces, global_center);
+			auto normalized_vertexes = normalize_mesh(global_vertexes);
+			std::span<vec3_base> normalized_vertexes_span(normalized_vertexes.begin(), normalized_vertexes.end());
+
+			auto convex_hull_faces = get_initial_tetrahedron(normalized_vertexes_span, global_center);
+			auto new_convex_hull = expand_hull(normalized_vertexes_span, convex_hull_faces, global_center);
 
 			{
 				std::vector<uint32_t> ch_indexes(new_convex_hull.size() * 3);

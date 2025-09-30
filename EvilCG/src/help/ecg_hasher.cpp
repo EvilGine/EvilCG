@@ -27,6 +27,20 @@ namespace ecg {
 		return seed;
 	}
 
+	size_t ecg_hash_func::operator()(const face_t& obj) const noexcept {
+		std::size_t seed = 0;
+		std::hash<uint32_t> hi;
+
+		std::array<uint32_t, 3> f = { obj.ind_1, obj.ind_2, obj.ind_3 };
+		std::sort(f.begin(), f.end());
+
+		boost::hash_combine(seed, hi(f[0]));
+		boost::hash_combine(seed, hi(f[1]));
+		boost::hash_combine(seed, hi(f[2]));
+
+		return seed;
+	}
+
 	size_t ecg_hash_func::operator()(const edge_t& obj) const noexcept {
 		std::size_t seed = 0;
 		std::hash<uint32_t> hi;
@@ -45,6 +59,19 @@ namespace ecg {
 		return compare_vec3_base(a, b, default_eps);
 	}
 
+	bool ecg_compare_func::operator()(const face_t& a, const face_t& b) const noexcept {
+		std::array<uint32_t, 3> f1 = { a.ind_1, a.ind_2, a.ind_3 };
+		std::array<uint32_t, 3> f2 = { b.ind_1, b.ind_2, b.ind_3 };
+		
+		std::sort(f1.begin(), f1.end());
+		std::sort(f2.begin(), f2.end());
+
+		return 
+			f1[0] == f2[0] && 
+			f1[1] == f2[1] && 
+			f1[2] == f2[2];
+	}
+
 	bool ecg_compare_func::operator()(const edge_t& a, const edge_t& b) const noexcept {
 		return (a.a == b.a && a.b == b.b) || (a.a == b.b && a.b == b.a);
 	}
@@ -54,5 +81,18 @@ namespace ecg {
 		if (std::abs(a.y - b.y) > ecg::default_eps) return a.y < b.y;
 		if (std::abs(a.z - b.z) > ecg::default_eps) return a.z < b.z;
 		return false;
+	}
+
+	bool ecg_less_func::operator()(const face_t& a, const face_t& b) const noexcept {
+		// Maybe better vector len variant
+		std::array<uint32_t, 3> f1 = { a.ind_1, a.ind_2, a.ind_3 };
+		std::array<uint32_t, 3> f2 = { b.ind_1, b.ind_2, b.ind_3 };
+
+		std::sort(f1.begin(), f1.end());
+		std::sort(f2.begin(), f2.end());
+
+		if (f1[0] != f2[0]) return f1[0] < f2[0];
+		if (f1[1] != f2[1]) return f1[1] < f2[1];
+		return f1[2] < f2[2];
 	}
 }

@@ -16,7 +16,13 @@ It provides tools for mesh analysis, geometric computations, and basic 3D operat
 ---
 
 ## Usage
-The library is under active development. Examples and demonstration screenshots will be added in the examples/ folder in future releases.
+The library is under active development. Examples and demonstration screenshots will be added in the Examples/ folder in future releases.
+
+> **Note:** The screenshots above were rendered in Blender for illustration purposes.  
+> The example code also allows exporting `.obj` files so you can test the library yourself.
+
+1) Convex Hull (Folder: Examples -> Hulls)
+![Convex Hull Example](documents/convex-hull.png)
 
 ---
 
