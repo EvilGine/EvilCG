@@ -71,6 +71,14 @@ namespace ecg {
 	/// </summary>
 	/// <returns></returns>
 	ECG_API void cleanup_all();
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="mesh"></param>
+	/// <param name="status"></param>
+	/// <returns></returns>
+	ECG_API ecg_array_t normalize_mesh(const ecg_mesh_t* mesh, ecg_status* status = nullptr);
 	
 	/// <summary>
 	/// Computes the sum of all vertex positions in the specified mesh.

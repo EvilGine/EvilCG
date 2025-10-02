@@ -44,6 +44,30 @@ namespace ecg {
 		return vec3_base();
 	}
 
+	ecg_array_t normalize_mesh(const ecg_mesh_t* mesh, ecg_status* status) {
+		auto& mem_inst = ecg_mem::get_instance();
+		ecg_status_handler op_res;
+		ecg_array_t result;
+		
+		try {
+			if (mesh == nullptr) return {};
+			if (mesh->vertexes == nullptr || mesh->vertexes_size == 0) return {};
+
+			std::span<vec3_base> vertexes(mesh->vertexes, mesh->vertexes_size);
+			auto normalized = normalize_mesh(vertexes);
+
+			result = allocate_array<vec3_base>(normalized.size());
+			std::memcpy(result.arr_ptr, normalized.data(), normalized.size() * sizeof(vec3_base));
+		}
+		catch (...) {
+			on_unknown_exception(op_res, status);
+			mem_inst.delete_memory(result.handler);
+			result = {};
+		}
+
+		return result;
+	}
+
 	vec3_base sum_vertexes(const ecg_mesh_t* mesh, ecg_status* status) {
 		ecg_status_handler op_res;
 		vec3_base result;
